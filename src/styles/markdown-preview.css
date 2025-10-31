@@ -1,0 +1,76 @@
+/* 強制 Markdown Preview 填滿整個容器寬度 */
+.wmde-markdown,
+.wmde-markdown-var,
+[data-color-mode="dark"] .wmde-markdown,
+[data-color-mode="light"] .wmde-markdown,
+.wmde-markdown.wmde-markdown-color,
+.markdown-body {
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* 覆蓋所有可能的容器類 */
+div[class*="wmde-markdown"],
+div[class*="markdown"] {
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 0 !important;
+}
+
+/* 確保內部元素也不會限制寬度 */
+.wmde-markdown > *,
+.markdown-body > *,
+.wmde-markdown * {
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+/* 調整代碼塊寬度 */
+.wmde-markdown pre,
+.markdown-body pre,
+.wmde-markdown code,
+.markdown-body code {
+  max-width: 100% !important;
+  overflow-x: auto !important;
+  box-sizing: border-box !important;
+}
+
+/* 調整表格寬度 */
+.wmde-markdown table,
+.markdown-body table {
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+/* 段落和標題 */
+.wmde-markdown p,
+.wmde-markdown h1,
+.wmde-markdown h2,
+.wmde-markdown h3,
+.wmde-markdown h4,
+.wmde-markdown h5,
+.wmde-markdown h6,
+.wmde-markdown ul,
+.wmde-markdown ol,
+.markdown-body p,
+.markdown-body h1,
+.markdown-body h2,
+.markdown-body h3,
+.markdown-body h4,
+.markdown-body h5,
+.markdown-body h6,
+.markdown-body ul,
+.markdown-body ol {
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+/* 移除任何內聯最大寬度限制 */
+[style*="max-width"] {
+  max-width: none !important;
+}

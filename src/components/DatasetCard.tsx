@@ -1,25 +1,13 @@
-import { Card, Badge, Group, Text, Button, Stack, Tooltip } from '@mantine/core';
+import { Card, Badge, Group, Text, Button, Stack, Tooltip, Box } from '@mantine/core';
 import { IconEye, IconDownload, IconFolder, IconUser, IconClock } from '@tabler/icons-react';
 import type { DatasetDataMeta } from '../types/dataset';
+import { DatasetTypeBadge, downloadDataset } from '../utils/datasetUtils';
+import { TimeDisplay } from './TimeDisplay';
 
 interface DatasetCardProps {
   datasetMeta: DatasetDataMeta;
   onViewDetails: (id: string) => void;
 }
-
-// Dataset Type 對應的顏色
-const datasetTypeColors: Record<string, string> = {
-  'EBI': 'blue',
-  'Escan IDT': 'violet',
-  'Escan IDT Result': 'grape',
-  'PrimeV IDT': 'pink',
-  'PrimeV IDT Result': 'red',
-  'GDS': 'orange',
-  'Review Ready': 'green',
-  'RSEM': 'cyan',
-  'RSEM Result': 'teal',
-  'Group': 'indigo',
-};
 
 export function DatasetCard({ datasetMeta, onViewDetails }: DatasetCardProps) {
   const { meta, data } = datasetMeta;
@@ -28,20 +16,20 @@ export function DatasetCard({ datasetMeta, onViewDetails }: DatasetCardProps) {
   const isGroup = data.type === 'Group';
 
   return (
-    <Card shadow="sm" padding="lg" radius="md" withBorder>
-      <Stack gap="md">
+    <Card 
+      shadow="sm" 
+      padding="lg" 
+      radius="md" 
+      withBorder
+      style={{ display: 'flex', flexDirection: 'column', height: '100%' }}
+    >
+      <Stack gap="md" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
         {/* Header */}
         <Group justify="space-between" align="flex-start">
           <Text fw={600} size="lg" style={{ flex: 1 }}>
             📦 {data.name}
           </Text>
-          <Badge 
-            color={datasetTypeColors[data.type] || 'gray'} 
-            variant="filled"
-            size="lg"
-          >
-            {data.type}
-          </Badge>
+          <DatasetTypeBadge type={data.type} variant="filled" size="lg" />
         </Group>
 
         {/* Recipe & Stage */}
@@ -87,6 +75,9 @@ export function DatasetCard({ datasetMeta, onViewDetails }: DatasetCardProps) {
           </Group>
         )}
 
+        {/* Spacer to push footer to bottom */}
+        <Box style={{ flex: 1 }} />
+
         {/* Footer */}
         <Group justify="space-between" mt="md" pt="md" style={{ borderTop: '1px solid var(--mantine-color-gray-3)' }}>
           <Stack gap={4}>
@@ -96,9 +87,7 @@ export function DatasetCard({ datasetMeta, onViewDetails }: DatasetCardProps) {
             </Group>
             <Group gap="xs">
               <IconClock size={14} />
-              <Text size="xs" c="dimmed">
-                {new Date(meta.createdTime).toLocaleDateString()}
-              </Text>
+              <TimeDisplay time={meta.createdTime} size="xs" color="dimmed" />
             </Group>
           </Stack>
 
@@ -115,6 +104,7 @@ export function DatasetCard({ datasetMeta, onViewDetails }: DatasetCardProps) {
               leftSection={<IconDownload size={16} />}
               variant="light"
               size="sm"
+              onClick={() => downloadDataset(datasetMeta)}
             >
               Download
             </Button>

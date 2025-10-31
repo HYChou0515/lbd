@@ -5,9 +5,9 @@ export const mockDatasets: DatasetDataMeta[] = [
   {
     meta: {
       creator: 'Diana Zhang',
-      createdTime: '2025-10-22T11:45:00Z',
+      createdTime: '2025-11-01T00:25:00Z',
       updater: 'Eva Wu',
-      updatedTime: '2025-10-25T16:30:00Z',
+      updatedTime: '2025-11-01T00:30:00Z',
       resourceId: 'res_003',
       revisionId: 'rev_rsem_analysis_001',
     },
@@ -193,7 +193,7 @@ export const mockDatasets: DatasetDataMeta[] = [
       type: 'Review Ready',
       name: 'Review Ready - Q4 Batch',
       description: 'Datasets prepared and ready for expert review with annotations and preliminary analysis.',
-      sub_dataset_revision_ids: ['rev_rsem_analysis_001', 'rev_primev_result_001'], // -> RSEM Analysis, PrimeV Detection Results
+      sub_dataset_revision_ids: ['rev_rsem_analysis_001', 'rev_primev_result_001', 'rev_escan_idt_002'], // -> RSEM Analysis, PrimeV Detection Results
       toolId: 'T06',
       waferId: 'W2025F',
       lotId: 'L15',
@@ -229,9 +229,9 @@ export const mockDatasets: DatasetDataMeta[] = [
   {
     meta: {
       creator: 'Grace Lin',
-      createdTime: '2025-10-25T15:00:00Z',
+      createdTime: '2025-11-01T15:00:00Z',
       updater: 'Grace Lin',
-      updatedTime: '2025-10-25T15:00:00Z',
+      updatedTime: '2025-11-01T15:00:00Z',
       resourceId: 'res_005',
       revisionId: 'rev_group_q4_007',
     },
