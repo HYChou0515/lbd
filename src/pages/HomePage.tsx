@@ -372,6 +372,12 @@ export function HomePage() {
           </div>
           <Group gap="xs">
             <Button
+              variant="light"
+              onClick={() => navigate({ to: '/submissions' })}
+            >
+              View Submissions
+            </Button>
+            <Button
               variant="subtle"
               leftSection={<IconSettings size={16} />}
               onClick={() => toggleSettingsModal(true)}

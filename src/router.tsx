@@ -1,6 +1,7 @@
 import { createRootRoute, createRoute, createRouter, Outlet } from '@tanstack/react-router';
 import { HomePage } from './pages/HomePage';
 import { DatasetDetailPage } from './pages/DatasetDetailPage';
+import { SubmissionPage } from './pages/SubmissionPage';
 import { mockDatasets } from './data/mockData';
 
 // Root route
@@ -31,8 +32,15 @@ const detailRoute = createRoute({
   },
 });
 
+// Submission route
+const submissionRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/submissions',
+  component: SubmissionPage,
+});
+
 // Create route tree
-const routeTree = rootRoute.addChildren([indexRoute, detailRoute]);
+const routeTree = rootRoute.addChildren([indexRoute, detailRoute, submissionRoute]);
 
 // Create router
 export const router = createRouter({ routeTree });
