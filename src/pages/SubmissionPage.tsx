@@ -38,7 +38,16 @@ type SubmissionRow = {
   [key: string]: any; // Dynamic fields for case metrics
 };
 
+// Current user (in real app, this would come from auth context)
+const CURRENT_USER = 'user1';
+
 export function SubmissionPage() {
+  // Filter submissions to only show current user's submissions
+  const mySubmissions = useMemo(
+    () => mockSubmissions.filter(s => s.data.submitter === CURRENT_USER),
+    []
+  );
+
   // Filters
   const [selectedCases, setSelectedCases] = useState<string[]>([]);
   const [selectedEvals, setSelectedEvals] = useState<string[]>([]);
@@ -75,9 +84,11 @@ export function SubmissionPage() {
       ]
     },
     { 
-      group: 'Other', 
+      group: 'Others', 
       items: [
-        { value: '__actions__', label: 'Actions' },
+        { value: '__status__', label: 'Status' },
+        { value: '__log__', label: 'Log' },
+        { value: '__artifact__', label: 'Artifact' },
       ]
     },
   ];
@@ -92,14 +103,14 @@ export function SubmissionPage() {
     { id: '__wall_time__', name: 'Wall Time', type: 'execution' as const },
     { id: '__cpu_time__', name: 'CPU Time', type: 'execution' as const },
     { id: '__memory__', name: 'Memory', type: 'execution' as const },
+    { id: '__status__', name: '', type: 'action' as const },
+    { id: '__log__', name: '', type: 'action' as const },
+    { id: '__artifact__', name: '', type: 'action' as const },
   ];
     
   const filteredMetrics = selectedEvals.length > 0
     ? allMetrics.filter(m => selectedEvals.includes(m.id))
     : allMetrics;
-  
-  // Check if actions column should be displayed
-  const showActions = selectedEvals.length === 0 || selectedEvals.includes('__actions__');
 
   // Format metric value
   const formatMetric = (value: number | undefined, metricType: string): string => {
@@ -117,7 +128,7 @@ export function SubmissionPage() {
 
   // Build table data with dynamic columns
   const tableData = useMemo(() => {
-    return mockSubmissions.map(submission => {
+    return mySubmissions.map(submission => {
       const row: SubmissionRow = {
         submission,
       };
@@ -151,14 +162,14 @@ export function SubmissionPage() {
 
       return row;
     });
-  }, [filteredCases, filteredMetrics]);
+  }, [mySubmissions, filteredCases, filteredMetrics]);
 
   // Build columns dynamically
   const columns = useMemo<MRT_ColumnDef<SubmissionRow>[]>(() => {
     const cols: MRT_ColumnDef<SubmissionRow>[] = [
       {
         accessorKey: 'submission.data.algo_id',
-        header: 'Submission',
+        header: 'Algorithm',
         size: 200,
         Cell: ({ row }) => {
           const algoId = row.original.submission.data.algo_id;
@@ -192,13 +203,8 @@ export function SubmissionPage() {
         },
       },
       {
-        accessorKey: 'submission.data.submitter',
-        header: 'Submitter',
-        size: 120,
-      },
-      {
         accessorKey: 'submission.data.submission_time',
-        header: 'Time',
+        header: 'Submission Time',
         size: 150,
         Cell: ({ row }) => (
           <TimeDisplay 
@@ -213,58 +219,49 @@ export function SubmissionPage() {
     filteredCases.forEach(caseItem => {
       const caseColumns: MRT_ColumnDef<SubmissionRow>[] = [];
       
-      // Add metric columns
+      // Add metric columns (including actions)
       filteredMetrics.forEach(metric => {
         const key = `${caseItem.meta.resourceId}_${metric.id}`;
-        caseColumns.push({
-          accessorKey: key,
-          id: key,
-          header: metric.name,
-          size: 100,
-          Header: () => (
-            <Text size="xs" fw={500}>
-              {metric.name}
-            </Text>
-          ),
-          Cell: ({ row }) => {
-            const value = row.original[key];
-            return (
-              <Text size="sm" fw={500}>
-                {formatMetric(value, metric.type === 'execution' ? metric.id.replace(/__/g, '') : 'score')}
-              </Text>
-            );
-          },
-        });
-      });
+        
+        // Handle action columns differently
+        if (metric.type === 'action') {
+          if (metric.id === '__status__') {
+            caseColumns.push({
+              id: key,
+              header: '',
+              size: 100,
+              enableSorting: false,
+              Cell: ({ row }) => {
+                const execResult = row.original[`${caseItem.meta.resourceId}_execResult`] as ExecutionResult | undefined;
+                
+                if (!execResult) {
+                  return <Text size="sm" c="dimmed">-</Text>;
+                }
 
-      // Add actions column if needed
-      if (showActions) {
-        caseColumns.push({
-          id: `${caseItem.meta.resourceId}_actions`,
-          header: 'Actions',
-          size: 150,
-          enableSorting: false,
-          Header: () => (
-            <Text size="xs" fw={500}>
-              Actions
-            </Text>
-          ),
-          Cell: ({ row }) => {
-            const execResult = row.original[`${caseItem.meta.resourceId}_execResult`] as ExecutionResult | undefined;
-            
-            if (!execResult) {
-              return <Text size="sm" c="dimmed">-</Text>;
-            }
+                return (
+                  <Badge 
+                    size="sm" 
+                    color={execResult.status === 'success' ? 'green' : 'red'}
+                  >
+                    {execResult.status}
+                  </Badge>
+                );
+              },
+            });
+          } else if (metric.id === '__log__') {
+            caseColumns.push({
+              id: key,
+              header: '',
+              size: 80,
+              enableSorting: false,
+              Cell: ({ row }) => {
+                const execResult = row.original[`${caseItem.meta.resourceId}_execResult`] as ExecutionResult | undefined;
+                
+                if (!execResult?.log_url) {
+                  return <Text size="sm" c="dimmed">-</Text>;
+                }
 
-            return (
-              <Group gap="xs" wrap="nowrap">
-                <Badge 
-                  size="xs" 
-                  color={execResult.status === 'success' ? 'green' : 'red'}
-                >
-                  {execResult.status}
-                </Badge>
-                {execResult.log_url && (
+                return (
                   <Tooltip label="View Log">
                     <ActionIcon
                       component="a"
@@ -273,11 +270,26 @@ export function SubmissionPage() {
                       size="sm"
                       variant="light"
                     >
-                      <IconFileText size={14} />
+                      <IconFileText size={16} />
                     </ActionIcon>
                   </Tooltip>
-                )}
-                {execResult.artifact_url && (
+                );
+              },
+            });
+          } else if (metric.id === '__artifact__') {
+            caseColumns.push({
+              id: key,
+              header: '',
+              size: 80,
+              enableSorting: false,
+              Cell: ({ row }) => {
+                const execResult = row.original[`${caseItem.meta.resourceId}_execResult`] as ExecutionResult | undefined;
+                
+                if (!execResult?.artifact_url) {
+                  return <Text size="sm" c="dimmed">-</Text>;
+                }
+
+                return (
                   <Tooltip label="View Artifact">
                     <ActionIcon
                       component="a"
@@ -286,15 +298,36 @@ export function SubmissionPage() {
                       size="sm"
                       variant="light"
                     >
-                      <IconExternalLink size={14} />
+                      <IconExternalLink size={16} />
                     </ActionIcon>
                   </Tooltip>
-                )}
-              </Group>
-            );
-          },
-        });
-      }
+                );
+              },
+            });
+          }
+        } else {
+          // Regular metric columns (score and execution)
+          caseColumns.push({
+            accessorKey: key,
+            id: key,
+            header: metric.name,
+            size: 100,
+            Header: () => (
+              <Text size="xs" fw={500}>
+                {metric.name}
+              </Text>
+            ),
+            Cell: ({ row }) => {
+              const value = row.original[key];
+              return (
+                <Text size="sm" fw={500}>
+                  {formatMetric(value, metric.type === 'execution' ? metric.id.replace(/__/g, '') : 'score')}
+                </Text>
+              );
+            },
+          });
+        }
+      });
       
       // Add case group column
       cols.push({
@@ -310,13 +343,18 @@ export function SubmissionPage() {
     });
 
     return cols;
-  }, [filteredCases, filteredMetrics, showActions]);
+  }, [filteredCases, filteredMetrics]);
 
   return (
     <Stack gap="lg" p="lg">
       {/* Header */}
       <Group justify="space-between">
-        <Title order={2}>Submissions - {mockProgram.data.name}</Title>
+        <div>
+          <Title order={2}>My Submissions - {mockProgram.data.name}</Title>
+          <Text size="sm" c="dimmed" mt={4}>
+            Showing {mySubmissions.length} submission{mySubmissions.length !== 1 ? 's' : ''} by {CURRENT_USER}
+          </Text>
+        </div>
       </Group>
 
       {/* Filters */}
@@ -373,7 +411,7 @@ export function SubmissionPage() {
         initialState={{
           density: 'xs',
           columnPinning: {
-            left: ['submission.algo.name', 'submission.submitter', 'submission.submission_time'],
+            left: ['submission.data.algo_id', 'submission.data.submission_time'],
           },
         }}
       />
