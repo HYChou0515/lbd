@@ -12,7 +12,6 @@ import {
   ActionIcon,
   Tooltip,
   Box,
-  ScrollArea,
   Collapse,
   Code,
 } from '@mantine/core';
@@ -38,6 +37,9 @@ import { formatFullAbsoluteTime } from '../utils/timeUtils';
 import { TimeDisplay } from '../components/TimeDisplay';
 import '../styles/markdown-preview.css';
 import type { Dataset } from '../types/dataset';
+import type { FileNode } from '../data/mockFileStructure';
+import { mockFileStructure  } from '../data/mockFileStructure';
+import { DetailPageLayout } from '../layouts/DetailPageLayout';
 
 interface DatasetDetailPageProps {
   datasetMeta: Resource<Dataset>;
@@ -137,286 +139,6 @@ function TreeNode({ dataset, level, onSelect, selectedId }: TreeNodeProps) {
     </Box>
   );
 }
-
-// 模擬檔案結構
-interface FileNode {
-  name: string;
-  type: 'file' | 'folder';
-  children?: FileNode[];
-  content?: string;
-}
-
-const mockFileStructure: FileNode = {
-  name: 'dataset_root',
-  type: 'folder',
-  children: [
-    {
-      name: 'images',
-      type: 'folder',
-      children: [
-        { name: 'img_001.png', type: 'file', content: 'Binary image data...\nSize: 2.3 MB\nDimensions: 1920x1080' },
-        { name: 'img_002.png', type: 'file', content: 'Binary image data...\nSize: 2.1 MB\nDimensions: 1920x1080' },
-        { name: 'img_003.png', type: 'file', content: 'Binary image data...\nSize: 2.4 MB\nDimensions: 1920x1080' },
-      ],
-    },
-    {
-      name: 'labels',
-      type: 'folder',
-      children: [
-        { 
-          name: 'labels.json', 
-          type: 'file', 
-          content: `{
-  "version": "1.0",
-  "labels": [
-    { "id": 1, "name": "defect_scratch", "count": 45 },
-    { "id": 2, "name": "defect_particle", "count": 23 },
-    { "id": 3, "name": "normal", "count": 932 }
-  ],
-  "total": 1000
-}` 
-        },
-      ],
-    },
-    { 
-      name: 'metadata.json', 
-      type: 'file', 
-      content: `{
-  "dataset_name": "Wafer Inspection Dataset",
-  "version": "2.1.0",
-  "created_date": "2025-10-15",
-  "total_images": 1000,
-  "format": "PNG",
-  "resolution": "1920x1080"
-  "dataset_name": "Wafer Inspection Dataset",
-  "version": "2.1.0",
-  "created_date": "2025-10-15",
-  "total_images": 1000,
-  "format": "PNG",
-  "resolution": "1920x1080"
-  "dataset_name": "Wafer Inspection Dataset",
-  "version": "2.1.0",
-  "created_date": "2025-10-15",
-  "total_images": 1000,
-  "format": "PNG",
-  "resolution": "1920x1080"
-  "dataset_name": "Wafer Inspection Dataset",
-  "version": "2.1.0",
-  "created_date": "2025-10-15",
-  "total_images": 1000,
-  "format": "PNG",
-  "resolution": "1920x1080"
-  "dataset_name": "Wafer Inspection Dataset",
-  "version": "2.1.0",
-  "created_date": "2025-10-15",
-  "total_images": 1000,
-  "format": "PNG",
-  "resolution": "1920x1080"
-  "dataset_name": "Wafer Inspection Dataset",
-  "version": "2.1.0",
-  "created_date": "2025-10-15",
-  "total_images": 1000,
-  "format": "PNG",
-  "resolution": "1920x1080"
-  "dataset_name": "Wafer Inspection Dataset",
-  "version": "2.1.0",
-  "created_date": "2025-10-15",
-  "total_images": 1000,
-  "format": "PNG",
-  "resolution": "1920x1080"
-  "dataset_name": "Wafer Inspection Dataset",
-  "version": "2.1.0",
-  "created_date": "2025-10-15",
-  "total_images": 1000,
-  "format": "PNG",
-  "resolution": "1920x1080"
-  "dataset_name": "Wafer Inspection Dataset",
-  "version": "2.1.0",
-  "created_date": "2025-10-15",
-  "total_images": 1000,
-  "format": "PNG",
-  "resolution": "1920x1080"
-  "dataset_name": "Wafer Inspection Dataset",
-  "version": "2.1.0",
-  "created_date": "2025-10-15",
-  "total_images": 1000,
-  "format": "PNG",
-  "resolution": "1920x1080"
-  "dataset_name": "Wafer Inspection Dataset",
-  "version": "2.1.0",
-  "created_date": "2025-10-15",
-  "total_images": 1000,
-  "format": "PNG",
-  "resolution": "1920x1080"
-  "dataset_name": "Wafer Inspection Dataset",
-  "version": "2.1.0",
-  "created_date": "2025-10-15",
-  "total_images": 1000,
-  "format": "PNG",
-  "resolution": "1920x1080"
-  "dataset_name": "Wafer Inspection Dataset",
-  "version": "2.1.0",
-  "created_date": "2025-10-15",
-  "total_images": 1000,
-  "format": "PNG",
-  "resolution": "1920x1080"
-  "dataset_name": "Wafer Inspection Dataset",
-  "version": "2.1.0",
-  "created_date": "2025-10-15",
-  "total_images": 1000,
-  "format": "PNG",
-  "resolution": "1920x1080"
-  "dataset_name": "Wafer Inspection Dataset",
-  "version": "2.1.0",
-  "created_date": "2025-10-15",
-  "total_images": 1000,
-  "format": "PNG",
-  "resolution": "1920x1080"
-  "dataset_name": "Wafer Inspection Dataset",
-  "version": "2.1.0",
-  "created_date": "2025-10-15",
-  "total_images": 1000,
-  "format": "PNG",
-  "resolution": "1920x1080"
-  "dataset_name": "Wafer Inspection Dataset",
-  "version": "2.1.0",
-  "created_date": "2025-10-15",
-  "total_images": 1000,
-  "format": "PNG",
-  "resolution": "1920x1080"
-  "dataset_name": "Wafer Inspection Dataset",
-  "version": "2.1.0",
-  "created_date": "2025-10-15",
-  "total_images": 1000,
-  "format": "PNG",
-  "resolution": "1920x1080"
-  "dataset_name": "Wafer Inspection Dataset",
-  "version": "2.1.0",
-  "created_date": "2025-10-15",
-  "total_images": 1000,
-  "format": "PNG",
-  "resolution": "1920x1080"
-  "dataset_name": "Wafer Inspection Dataset",
-  "version": "2.1.0",
-  "created_date": "2025-10-15",
-  "total_images": 1000,
-  "format": "PNG",
-  "resolution": "1920x1080"
-  "dataset_name": "Wafer Inspection Dataset",
-  "version": "2.1.0",
-  "created_date": "2025-10-15",
-  "total_images": 1000,
-  "format": "PNG",
-  "resolution": "1920x1080"
-  "dataset_name": "Wafer Inspection Dataset",
-  "version": "2.1.0",
-  "created_date": "2025-10-15",
-  "total_images": 1000,
-  "format": "PNG",
-  "resolution": "1920x1080"
-  "dataset_name": "Wafer Inspection Dataset",
-  "version": "2.1.0",
-  "created_date": "2025-10-15",
-  "total_images": 1000,
-  "format": "PNG",
-  "resolution": "1920x1080"
-  "dataset_name": "Wafer Inspection Dataset",
-  "version": "2.1.0",
-  "created_date": "2025-10-15",
-  "total_images": 1000,
-  "format": "PNG",
-  "resolution": "1920x1080"
-  "dataset_name": "Wafer Inspection Dataset",
-  "version": "2.1.0",
-  "created_date": "2025-10-15",
-  "total_images": 1000,
-  "format": "PNG",
-  "resolution": "1920x1080"
-  "dataset_name": "Wafer Inspection Dataset",
-  "version": "2.1.0",
-  "created_date": "2025-10-15",
-  "total_images": 1000,
-  "format": "PNG",
-  "resolution": "1920x1080"
-  "dataset_name": "Wafer Inspection Dataset",
-  "version": "2.1.0",
-  "created_date": "2025-10-15",
-  "total_images": 1000,
-  "format": "PNG",
-  "resolution": "1920x1080"
-  "dataset_name": "Wafer Inspection Dataset",
-  "version": "2.1.0",
-  "created_date": "2025-10-15",
-  "total_images": 1000,
-  "format": "PNG",
-  "resolution": "1920x1080"
-  "dataset_name": "Wafer Inspection Dataset",
-  "version": "2.1.0",
-  "created_date": "2025-10-15",
-  "total_images": 1000,
-  "format": "PNG",
-  "resolution": "1920x1080"
-  "dataset_name": "Wafer Inspection Dataset",
-  "version": "2.1.0",
-  "created_date": "2025-10-15",
-  "total_images": 1000,
-  "format": "PNG",
-  "resolution": "1920x1080"
-  "dataset_name": "Wafer Inspection Dataset",
-  "version": "2.1.0",
-  "created_date": "2025-10-15",
-  "total_images": 1000,
-  "format": "PNG",
-  "resolution": "1920x1080"
-  "dataset_name": "Wafer Inspection Dataset",
-  "version": "2.1.0",
-  "created_date": "2025-10-15",
-  "total_images": 1000,
-  "format": "PNG",
-  "resolution": "1920x1080"
-  "dataset_name": "Wafer Inspection Dataset",
-  "version": "2.1.0",
-  "created_date": "2025-10-15",
-  "total_images": 1000,
-  "format": "PNG",
-  "resolution": "1920x1080"
-  "dataset_name": "Wafer Inspection Dataset",
-  "version": "2.1.0",
-  "created_date": "2025-10-15",
-  "total_images": 1000,
-  "format": "PNG",
-  "resolution": "1920x1080"
-  "dataset_name": "Wafer Inspection Dataset",
-  "version": "2.1.0",
-  "created_date": "2025-10-15",
-  "total_images": 1000,
-  "format": "PNG",
-  "resolution": "1920x1080"
-}` 
-    },
-    { 
-      name: 'README.md', 
-      type: 'file', 
-      content: `# Dataset README
-
-## Overview
-This dataset contains wafer inspection images and labels.
-
-## Structure
-- images/: Raw image files
-- labels/: Annotation files in JSON format
-- metadata.json: Dataset metadata
-
-## Usage
-1. Load images from images/ directory
-2. Read labels from labels/labels.json
-3. Check metadata.json for dataset information
-
-## License
-Internal use only` 
-    },
-  ],
-};
 
 interface FileTreeNodeProps {
   node: FileNode;
@@ -672,97 +394,73 @@ ${subdatasets.length > 0
   };
 
   return (
-    <Stack h="100vh" w="100vw" style={{ overflow: 'hidden' }}>
-      {/* Header */}
-      <Box p="md" style={{ borderBottom: '1px solid var(--mantine-color-gray-3)', flexShrink: 0 }}>
-        <Group justify="space-between" mb="sm" wrap="nowrap">
-          <Box style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
-            <Breadcrumbs separator={<IconChevronRight size={14} />}>
-              {breadcrumbItems}
-            </Breadcrumbs>
-          </Box>
-          <Button 
-            leftSection={<IconArrowLeft size={16} />}
-            variant="subtle"
-            onClick={onBack}
-            style={{ flexShrink: 0 }}
-          >
-            Back
-          </Button>
-        </Group>
-        
-        <Group justify="space-between" wrap="nowrap">
-          <Group style={{ flex: 1, minWidth: 0 }} wrap="nowrap">
-            <Title order={3} style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-              📦 {data.name}
-            </Title>
-            <Badge 
-              color={datasetTypeColors[data.type] || 'gray'} 
-              variant="filled"
-              size="lg"
+    <DetailPageLayout
+      header={
+        <>
+          <Group justify="space-between" mb="sm" wrap="nowrap">
+            <Box style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
+              <Breadcrumbs separator={<IconChevronRight size={14} />}>
+                {breadcrumbItems}
+              </Breadcrumbs>
+            </Box>
+            <Button 
+              leftSection={<IconArrowLeft size={16} />}
+              variant="subtle"
+              onClick={onBack}
               style={{ flexShrink: 0 }}
             >
-              {data.type}
-            </Badge>
-          </Group>
-          <Group gap="xs" style={{ flexShrink: 0 }}>
-            <Tooltip label="Preview">
-              <ActionIcon variant="light" size="lg">
-                <IconEye size={20} />
-              </ActionIcon>
-            </Tooltip>
-            <Button leftSection={<IconDownload size={16} />}>
-              Download
+              Back
             </Button>
           </Group>
-        </Group>
-      </Box>
-
-      {/* Three Column Layout */}
-      <Box w="100vw" style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
-        {/* Left Column - Dataset Tree + File Structure */}
-        <Box 
-          style={{ 
-            width: '20%',
-            minWidth: '250px',
-            maxWidth: '400px',
-            borderRight: '1px solid var(--mantine-color-gray-3)',
-            display: 'flex',
-            flexDirection: 'column',
-            overflow: 'hidden',
-          }}
-        >
-          <ScrollArea style={{ flex: 1 }}>
-            <Box p="md">
-              <Title order={5} mb="md">Dataset Structure</Title>
-              <TreeNode
-                dataset={datasetMeta}
-                level={0}
-                onSelect={handleSelectDataset}
-                selectedId={selectedDataset.meta.revisionId}
-              />
-              
-              <Divider my="xl" />
-              
-              <Title order={5} mb="md">File Structure</Title>
-              <FileStructurePreview 
-                onSelectFile={handleSelectFile}
-                selectedFile={selectedFile?.name || null}
-              />
-            </Box>
-          </ScrollArea>
-        </Box>
-
-        {/* Middle Column - File Content Display with Monaco Editor */}
-        <Box 
-          style={{ 
-            flex: 1,
-            minWidth: 0,
-            display: 'flex',
-            flexDirection: 'column',
-            overflow: 'hidden',
-          }}
-        >
+          
+          <Group justify="space-between" wrap="nowrap">
+            <Group style={{ flex: 1, minWidth: 0 }} wrap="nowrap">
+              <Title order={3} style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                📦 {data.name}
+              </Title>
+              <Badge 
+                color={datasetTypeColors[data.type] || 'gray'} 
+                variant="filled"
+                size="lg"
+                style={{ flexShrink: 0 }}
+              >
+                {data.type}
+              </Badge>
+            </Group>
+            <Group gap="xs" style={{ flexShrink: 0 }}>
+              <Tooltip label="Preview">
+                <ActionIcon variant="light" size="lg">
+                  <IconEye size={20} />
+                </ActionIcon>
+              </Tooltip>
+              <Button leftSection={<IconDownload size={16} />}>
+                Download
+              </Button>
+            </Group>
+          </Group>
+        </>
+      }
+      leftPanel={
+        <>
+          <Title order={5} mb="md">Dataset Structure</Title>
+          <TreeNode
+            dataset={datasetMeta}
+            level={0}
+            onSelect={handleSelectDataset}
+            selectedId={selectedDataset.meta.revisionId}
+          />
+          
+          <Divider my="xl" />
+          
+          <Title order={5} mb="md">File Structure</Title>
+          <FileStructurePreview 
+            onSelectFile={handleSelectFile}
+            selectedFile={selectedFile?.name || null}
+          />
+        </>
+      }
+      mainPanel={
+        <>
           <Box p="md" style={{ borderBottom: '1px solid var(--mantine-color-gray-3)', flexShrink: 0 }}>
             <Group justify="space-between" wrap="nowrap">
               <Text size="sm" c="dimmed" ff="monospace">
@@ -826,174 +524,158 @@ ${subdatasets.length > 0
               />
             )}
           </Box>
-        </Box>
+        </>
+      }
+      rightPanel={
+        <Stack gap="md">
+          <Title order={5}>Detail</Title>
+          
+          <Divider />
 
-        {/* Right Column - Metadata */}
-        <Box 
-          style={{ 
-            width: '20%',
-            minWidth: '250px',
-            maxWidth: '400px',
-            borderLeft: '1px solid var(--mantine-color-gray-3)',
-            display: 'flex',
-            flexDirection: 'column',
-            overflow: 'hidden',
-          }}
-        >
-          <ScrollArea style={{ flex: 1 }}>
-            <Box p="md">
-              <Stack gap="md">
-                <Title order={5}>Detail</Title>
-                
-                <Divider />
+          {/* Dataset Name and Type */}
+          <Box>
+            <Text size="sm" fw={600} mb="xs">Dataset</Text>
+            <Stack gap="xs">
+              <div>
+                <Text size="xs" c="dimmed">Name:</Text>
+                <Text size="sm" fw={500}>{selectedDataset.data.name}</Text>
+              </div>
+              <div>
+                <Text size="xs" c="dimmed">Type:</Text>
+                <Badge 
+                  color={datasetTypeColors[selectedDataset.data.type] || 'gray'} 
+                  variant="light"
+                  size="sm"
+                >
+                  {selectedDataset.data.type}
+                </Badge>
+              </div>
+            </Stack>
+            
+            {/* 只有當選擇的 dataset 不是頁面初始的 dataset 時才顯示按鈕 */}
+            {selectedDataset.meta.resourceId !== datasetMeta.meta.resourceId && (
+              <Button
+                fullWidth
+                mt="sm"
+                variant="light"
+                rightSection={<IconChevronRight size={16} />}
+                onClick={() => {
+                  navigate({ 
+                    to: '/dataset/$resourceId', 
+                    params: { resourceId: selectedDataset.meta.resourceId } 
+                  });
+                }}
+              >
+                Go to this Dataset Page
+              </Button>
+            )}
+          </Box>
 
-                {/* Dataset Name and Type */}
-                <Box>
-                  <Text size="sm" fw={600} mb="xs">Dataset</Text>
-                  <Stack gap="xs">
-                    <div>
-                      <Text size="xs" c="dimmed">Name:</Text>
-                      <Text size="sm" fw={500}>{selectedDataset.data.name}</Text>
-                    </div>
-                    <div>
-                      <Text size="xs" c="dimmed">Type:</Text>
-                      <Badge 
-                        color={datasetTypeColors[selectedDataset.data.type] || 'gray'} 
-                        variant="light"
-                        size="sm"
-                      >
-                        {selectedDataset.data.type}
-                      </Badge>
-                    </div>
-                  </Stack>
-                  
-                  {/* 只有當選擇的 dataset 不是頁面初始的 dataset 時才顯示按鈕 */}
-                  {selectedDataset.meta.resourceId !== datasetMeta.meta.resourceId && (
-                    <Button
-                      fullWidth
-                      mt="sm"
-                      variant="light"
-                      rightSection={<IconChevronRight size={16} />}
-                      onClick={() => {
-                        navigate({ 
-                          to: '/dataset/$resourceId', 
-                          params: { resourceId: selectedDataset.meta.resourceId } 
-                        });
-                      }}
-                    >
-                      Go to this Dataset Page
-                    </Button>
-                  )}
-                </Box>
+          <Divider />
 
-                <Divider />
-
-                {/* Process Info */}
-                {!isGroup && 'toolId' in selectedDataset.data && (
-                  <Box>
-                    <Text size="sm" fw={600} mb="xs">Process Info</Text>
-                    <Stack gap="xs">
-                      <Group gap="xs">
-                        <Text size="xs" c="dimmed" w={60}>Tool:</Text>
-                        <Badge variant="light" size="sm">{selectedDataset.data.toolId}</Badge>
-                      </Group>
-                      <Group gap="xs">
-                        <Text size="xs" c="dimmed" w={60}>Wafer:</Text>
-                        <Badge variant="light" size="sm">{selectedDataset.data.waferId}</Badge>
-                      </Group>
-                      <Group gap="xs">
-                        <Text size="xs" c="dimmed" w={60}>Lot:</Text>
-                        <Badge variant="light" size="sm">{selectedDataset.data.lotId}</Badge>
-                      </Group>
-                      <Group gap="xs">
-                        <Text size="xs" c="dimmed" w={60}>Part:</Text>
-                        <Badge variant="light" size="sm">{selectedDataset.data.part}</Badge>
-                      </Group>
-                      {/* Recipe & Stage 也放在 Process Info 裡 */}
-                      {'recipe' in selectedDataset.data && (
-                        <>
-                          <Group gap="xs">
-                            <Text size="xs" c="dimmed" w={60}>Recipe:</Text>
-                            <Text size="sm">{selectedDataset.data.recipe}</Text>
-                          </Group>
-                          <Group gap="xs">
-                            <Text size="xs" c="dimmed" w={60}>Stage:</Text>
-                            <Text size="sm">{selectedDataset.data.stage}</Text>
-                          </Group>
-                        </>
-                      )}
-                    </Stack>
-                  </Box>
+          {/* Process Info */}
+          {!isGroup && 'toolId' in selectedDataset.data && (
+            <Box>
+              <Text size="sm" fw={600} mb="xs">Process Info</Text>
+              <Stack gap="xs">
+                <Group gap="xs">
+                  <Text size="xs" c="dimmed" w={60}>Tool:</Text>
+                  <Badge variant="light" size="sm">{selectedDataset.data.toolId}</Badge>
+                </Group>
+                <Group gap="xs">
+                  <Text size="xs" c="dimmed" w={60}>Wafer:</Text>
+                  <Badge variant="light" size="sm">{selectedDataset.data.waferId}</Badge>
+                </Group>
+                <Group gap="xs">
+                  <Text size="xs" c="dimmed" w={60}>Lot:</Text>
+                  <Badge variant="light" size="sm">{selectedDataset.data.lotId}</Badge>
+                </Group>
+                <Group gap="xs">
+                  <Text size="xs" c="dimmed" w={60}>Part:</Text>
+                  <Badge variant="light" size="sm">{selectedDataset.data.part}</Badge>
+                </Group>
+                {/* Recipe & Stage 也放在 Process Info 裡 */}
+                {'recipe' in selectedDataset.data && (
+                  <>
+                    <Group gap="xs">
+                      <Text size="xs" c="dimmed" w={60}>Recipe:</Text>
+                      <Text size="sm">{selectedDataset.data.recipe}</Text>
+                    </Group>
+                    <Group gap="xs">
+                      <Text size="xs" c="dimmed" w={60}>Stage:</Text>
+                      <Text size="sm">{selectedDataset.data.stage}</Text>
+                    </Group>
+                  </>
                 )}
-
-                <Divider />
-
-                {/* Description */}
-                <Box>
-                  <Text size="sm" fw={600} mb="xs">Description</Text>
-                  <Text size="sm" c="dimmed">
-                    {selectedDataset.data.description}
-                  </Text>
-                </Box>
-
-                <Divider />
-
-                {/* Resource Info */}
-                <Box>
-                  <Text size="sm" fw={600} mb="xs">Resource Info</Text>
-                  <Stack gap="xs">
-                    <Group gap="xs">
-                      <IconUser size={14} />
-                      <div style={{ flex: 1 }}>
-                        <Text size="xs" c="dimmed">Creator</Text>
-                        <Text size="sm">{selectedDataset.meta.creator}</Text>
-                      </div>
-                    </Group>
-                    <Group gap="xs">
-                      <IconClock size={14} />
-                      <div style={{ flex: 1 }}>
-                        <Text size="xs" c="dimmed">Created</Text>
-                        <TimeDisplay time={selectedDataset.meta.createdTime} size="sm" />
-                      </div>
-                    </Group>
-                    <Group gap="xs">
-                      <IconUser size={14} />
-                      <div style={{ flex: 1 }}>
-                        <Text size="xs" c="dimmed">Updater</Text>
-                        <Text size="sm">{selectedDataset.meta.updater}</Text>
-                      </div>
-                    </Group>
-                    <Group gap="xs">
-                      <IconClock size={14} />
-                      <div style={{ flex: 1 }}>
-                        <Text size="xs" c="dimmed">Updated</Text>
-                        <TimeDisplay time={selectedDataset.meta.updatedTime} size="sm" />
-                      </div>
-                    </Group>
-                  </Stack>
-                </Box>
-
-                <Divider />
-
-                {/* IDs */}
-                <Box>
-                  <Text size="sm" fw={600} mb="xs">Identifiers</Text>
-                  <Stack gap="xs">
-                    <div>
-                      <Text size="xs" c="dimmed">Resource ID</Text>
-                      <Code>{selectedDataset.meta.resourceId}</Code>
-                    </div>
-                    <div>
-                      <Text size="xs" c="dimmed">Revision ID</Text>
-                      <Code>{selectedDataset.meta.revisionId}</Code>
-                    </div>
-                  </Stack>
-                </Box>
               </Stack>
             </Box>
-          </ScrollArea>
-        </Box>
-      </Box>
-    </Stack>
+          )}
+
+          <Divider />
+
+          {/* Description */}
+          <Box>
+            <Text size="sm" fw={600} mb="xs">Description</Text>
+            <Text size="sm" c="dimmed">
+              {selectedDataset.data.description}
+            </Text>
+          </Box>
+
+          <Divider />
+
+          {/* Resource Info */}
+          <Box>
+            <Text size="sm" fw={600} mb="xs">Resource Info</Text>
+            <Stack gap="xs">
+              <Group gap="xs">
+                <IconUser size={14} />
+                <div style={{ flex: 1 }}>
+                  <Text size="xs" c="dimmed">Creator</Text>
+                  <Text size="sm">{selectedDataset.meta.creator}</Text>
+                </div>
+              </Group>
+              <Group gap="xs">
+                <IconClock size={14} />
+                <div style={{ flex: 1 }}>
+                  <Text size="xs" c="dimmed">Created</Text>
+                  <TimeDisplay time={selectedDataset.meta.createdTime} size="sm" />
+                </div>
+              </Group>
+              <Group gap="xs">
+                <IconUser size={14} />
+                <div style={{ flex: 1 }}>
+                  <Text size="xs" c="dimmed">Updater</Text>
+                  <Text size="sm">{selectedDataset.meta.updater}</Text>
+                </div>
+              </Group>
+              <Group gap="xs">
+                <IconClock size={14} />
+                <div style={{ flex: 1 }}>
+                  <Text size="xs" c="dimmed">Updated</Text>
+                  <TimeDisplay time={selectedDataset.meta.updatedTime} size="sm" />
+                </div>
+              </Group>
+            </Stack>
+          </Box>
+
+          <Divider />
+
+          {/* IDs */}
+          <Box>
+            <Text size="sm" fw={600} mb="xs">Identifiers</Text>
+            <Stack gap="xs">
+              <div>
+                <Text size="xs" c="dimmed">Resource ID</Text>
+                <Code>{selectedDataset.meta.resourceId}</Code>
+              </div>
+              <div>
+                <Text size="xs" c="dimmed">Revision ID</Text>
+                <Code>{selectedDataset.meta.revisionId}</Code>
+              </div>
+            </Stack>
+          </Box>
+        </Stack>
+      }
+    />
   );
 }
