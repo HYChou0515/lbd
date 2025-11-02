@@ -31,9 +31,10 @@ export function ThreeColumnLayout({
   rightMaxWidth = '400px',
 }: ThreeColumnLayoutProps) {
   return (
-    <Box w="100vw" style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+    <Box w="100vw" pl="10px" pr="10px" style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
       {/* Left Column */}
       <Box 
+         p="10px"
         style={{ 
           width: leftWidth,
           minWidth: leftMinWidth,
@@ -64,6 +65,7 @@ export function ThreeColumnLayout({
 
       {/* Right Column */}
       <Box 
+         p="10px"
         style={{ 
           width: rightWidth,
           minWidth: rightMinWidth,

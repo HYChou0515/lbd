@@ -1,5 +1,6 @@
 import { createRootRoute, createRoute, createRouter, Outlet } from '@tanstack/react-router';
 import { HomePage } from './pages/HomePage';
+import { DatasetPage } from './pages/DatasetPage';
 import { DatasetDetailPage } from './pages/DatasetDetailPage';
 import { SubmissionPage } from './pages/SubmissionPage';
 import { ProgramsPage } from './pages/ProgramsPage';
@@ -12,11 +13,18 @@ const rootRoute = createRootRoute({
   component: () => <Outlet />,
 });
 
-// Home route
+// Home route - redirects to programs
 const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/',
   component: HomePage,
+});
+
+// Datasets list route
+const datasetsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/datasets',
+  component: DatasetPage,
 });
 
 // Detail route
@@ -66,7 +74,14 @@ const programRoute = createRoute({
 });
 
 // Create route tree
-const routeTree = rootRoute.addChildren([indexRoute, detailRoute, submissionRoute, programsRoute, programRoute]);
+const routeTree = rootRoute.addChildren([
+  indexRoute, 
+  datasetsRoute,
+  detailRoute, 
+  submissionRoute, 
+  programsRoute, 
+  programRoute
+]);
 
 // Create router
 export const router = createRouter({ routeTree });

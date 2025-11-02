@@ -1,16 +1,39 @@
-import { Container, Title, Text, Card, Group, Badge, Stack, SimpleGrid } from '@mantine/core';
-import { Link } from '@tanstack/react-router';
-import { IconTrophy, IconUsers, IconCalendar } from '@tabler/icons-react';
+import { Container, Title, Text, Stack, SimpleGrid, Tabs } from '@mantine/core';
+import { useNavigate } from '@tanstack/react-router';
+import { IconTrophy, IconDatabase } from '@tabler/icons-react';
 import { mockProgram } from '../data/mockProgramData';
-import { TimeDisplay } from '../components/TimeDisplay';
+import { ProgramCard } from '../components/ProgramCard';
 
 export function ProgramsPage() {
+  const navigate = useNavigate();
+  
   // In a real app, this would fetch multiple programs
   const programs = [mockProgram];
+
+  const handleViewDetails = (resourceId: string) => {
+    navigate({ to: '/program/$resourceId', params: { resourceId } });
+  };
 
   return (
     <Container size="xl" py="xl">
       <Stack gap="xl">
+        {/* Navigation Tabs */}
+        <Tabs value="programs" onChange={(value) => {
+          if (value === 'datasets') {
+            navigate({ to: '/datasets' });
+          }
+        }}>
+          <Tabs.List>
+            <Tabs.Tab value="programs" leftSection={<IconTrophy size={16} />}>
+              Programs
+            </Tabs.Tab>
+            <Tabs.Tab value="datasets" leftSection={<IconDatabase size={16} />}>
+              Datasets
+            </Tabs.Tab>
+          </Tabs.List>
+        </Tabs>
+
+        {/* Page Header */}
         <div>
           <Title order={1} mb="sm">Programs</Title>
           <Text c="dimmed">
@@ -20,54 +43,11 @@ export function ProgramsPage() {
 
         <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} spacing="lg">
           {programs.map((program) => (
-            <Card
+            <ProgramCard
               key={program.meta.resourceId}
-              shadow="sm"
-              padding="lg"
-              radius="md"
-              withBorder
-              component={Link}
-              to={`/program/${program.meta.resourceId}`}
-              style={{ textDecoration: 'none', cursor: 'pointer' }}
-            >
-              <Stack gap="md">
-                <Group justify="space-between">
-                  <IconTrophy size={32} stroke={1.5} />
-                  <Badge color="green" variant="light">
-                    Active
-                  </Badge>
-                </Group>
-
-                <div>
-                  <Title order={3} mb="xs">
-                    {program.data.name}
-                  </Title>
-                  <Text size="sm" c="dimmed" lineClamp={3}>
-                    {program.data.description}
-                  </Text>
-                </div>
-
-                <Stack gap="xs">
-                  <Group gap="xs">
-                    <IconUsers size={16} stroke={1.5} />
-                    <Text size="sm" c="dimmed">
-                      {program.data.case_ids.length} cases
-                    </Text>
-                  </Group>
-
-                  <Group gap="xs">
-                    <IconCalendar size={16} stroke={1.5} />
-                    <Text size="sm" c="dimmed">
-                      Created <TimeDisplay time={program.meta.createdTime} size="sm" />
-                    </Text>
-                  </Group>
-                </Stack>
-
-                <Text size="xs" c="dimmed" ff="monospace">
-                  {program.meta.resourceId}
-                </Text>
-              </Stack>
-            </Card>
+              program={program}
+              onViewDetails={handleViewDetails}
+            />
           ))}
         </SimpleGrid>
       </Stack>
