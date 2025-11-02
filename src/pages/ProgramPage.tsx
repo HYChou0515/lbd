@@ -12,14 +12,29 @@ import {
   Stack,
   Breadcrumbs,
   Anchor,
+  Divider,
+  Card,
+  Collapse,
 } from '@mantine/core';
-import { IconTrophy, IconEye, IconDownload, IconArrowLeft, IconChevronRight } from '@tabler/icons-react';
+import { 
+  IconTrophy, 
+  IconEye, 
+  IconDownload, 
+  IconArrowLeft, 
+  IconChevronRight,
+  IconFolder,
+  IconFolderOpen,
+  IconFile,
+  IconChevronDown,
+} from '@tabler/icons-react';
 import { ProgramTree } from '../components/program/ProgramTree';
 import { DetailPageLayout } from '../layouts/DetailPageLayout';
 import type { Resource } from '../types/meta';
 import type { Program } from '../types/program';
 import { ProgramContent } from '../components/program/ProgramContent';
 import { ProgramMetaInfo } from '../components/program/ProgramMetaInfo';
+import type { FileNode } from '../data/mockFileStructure';
+import { mockProgramFileStructure } from '../data/mockProgramFileStructure';
 
 export type ProgramNodeType = 
   | 'program'
@@ -45,9 +60,88 @@ interface ProgramPageProps {
   program: Resource<Program>;
 }
 
+// File tree node component
+interface FileTreeNodeProps {
+  node: FileNode;
+  level: number;
+  onSelectFile: (node: FileNode) => void;
+  selectedFile: string | null;
+}
+
+function FileTreeNode({ node, level, onSelectFile, selectedFile }: FileTreeNodeProps) {
+  const [isOpen, setIsOpen] = useState(level === 0);
+  const hasChildren = node.children && node.children.length > 0;
+  const isSelected = node.name === selectedFile;
+
+  return (
+    <Box>
+      <Group
+        gap="xs"
+        pl={level * 16}
+        py={4}
+        px={6}
+        style={{
+          cursor: 'pointer',
+          backgroundColor: isSelected ? 'var(--mantine-color-blue-light)' : 'transparent',
+          borderRadius: 4,
+        }}
+        onClick={() => {
+          if (node.type === 'file') {
+            onSelectFile(node);
+          } else {
+            setIsOpen(!isOpen);
+          }
+        }}
+      >
+        {hasChildren && (
+          <ActionIcon
+            size="xs"
+            variant="subtle"
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsOpen(!isOpen);
+            }}
+          >
+            <IconChevronDown
+              size={12}
+              style={{
+                transform: isOpen ? 'rotate(0deg)' : 'rotate(-90deg)',
+                transition: 'transform 0.2s',
+              }}
+            />
+          </ActionIcon>
+        )}
+        {!hasChildren && <Box w={16} />}
+        {node.type === 'folder' ? (
+          isOpen ? <IconFolderOpen size={14} color="var(--mantine-color-orange-6)" /> : <IconFolder size={14} color="var(--mantine-color-orange-6)" />
+        ) : (
+          <IconFile size={14} color="var(--mantine-color-blue-6)" />
+        )}
+        <Text size="xs" ff="monospace" style={{ flex: 1 }}>
+          {node.name}
+        </Text>
+      </Group>
+      {hasChildren && (
+        <Collapse in={isOpen}>
+          {node.children!.map((child, idx) => (
+            <FileTreeNode
+              key={idx}
+              node={child}
+              level={level + 1}
+              onSelectFile={onSelectFile}
+              selectedFile={selectedFile}
+            />
+          ))}
+        </Collapse>
+      )}
+    </Box>
+  );
+}
+
 export function ProgramPage({ program }: ProgramPageProps) {
   const navigate = useNavigate();
   const [selectedNode, setSelectedNode] = useState<ProgramNode | null>(null);
+  const [selectedFile, setSelectedFile] = useState<FileNode | null>(null);
 
   const onBack = () => {
     navigate({ to: '/programs' });
@@ -113,20 +207,9 @@ export function ProgramPage({ program }: ProgramPageProps) {
       }
       leftPanel={
         <Stack gap="lg">
-          {/* Program Header */}
+          {/* Program Structure */}
           <Box>
-            <Group gap="xs" mb="xs">
-              <Title order={5}>{program.data.name}</Title>
-              <Badge size="sm" color="green" variant="light">Active</Badge>
-            </Group>
-            <Text size="xs" c="dimmed" lineClamp={2}>
-              {program.data.description}
-            </Text>
-          </Box>
-
-          {/* Program Tree */}
-          <Box>
-            <Text size="xs" fw={600} c="dimmed" mb="xs">STRUCTURE</Text>
+            <Title order={5} mb="md">Program Structure</Title>
             <ProgramTree
               program={program}
               selectedNode={selectedNode}
@@ -134,27 +217,19 @@ export function ProgramPage({ program }: ProgramPageProps) {
             />
           </Box>
 
-          {/* ZIP Structure Preview */}
+          <Divider my="xl" />
+
+          {/* File Structure */}
           <Box>
-            <Text size="xs" fw={600} c="dimmed" mb="xs">FOLDER STRUCTURE</Text>
-            <Box
-              p="xs"
-              style={{
-                backgroundColor: 'var(--mantine-color-gray-0)',
-                borderRadius: 'var(--mantine-radius-sm)',
-                fontSize: '11px',
-                fontFamily: 'monospace',
-              }}
-            >
-              <Text size="xs">📁 program-{program.meta.resourceId}</Text>
-              <Text size="xs" pl="md">📁 data/</Text>
-              <Text size="xs" pl="xl">📄 cases/</Text>
-              <Text size="xs" pl="md">📁 algos/</Text>
-              <Text size="xs" pl="xl">📄 sample/</Text>
-              <Text size="xs" pl="xl">📄 eval/</Text>
-              <Text size="xs" pl="md">📁 submissions/</Text>
-              <Text size="xs" pl="md">📄 README.md</Text>
-            </Box>
+            <Title order={5} mb="md">File Structure</Title>
+            <Card withBorder>
+              <FileTreeNode
+                node={mockProgramFileStructure}
+                level={0}
+                onSelectFile={setSelectedFile}
+                selectedFile={selectedFile?.name || null}
+              />
+            </Card>
           </Box>
         </Stack>
       }
