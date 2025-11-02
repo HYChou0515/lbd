@@ -15,11 +15,11 @@ import {
 } from '@mantine/core';
 import { IconTrophy, IconEye, IconDownload, IconArrowLeft, IconChevronRight } from '@tabler/icons-react';
 import { ProgramTree } from '../components/program/ProgramTree';
-import { ProgramContent } from '../components/program/ProgramContent';
-import { ProgramMetaInfo } from '../components/program/ProgramMetaInfo';
 import { DetailPageLayout } from '../layouts/DetailPageLayout';
 import type { Resource } from '../types/meta';
 import type { Program } from '../types/program';
+import { ProgramContent } from '../components/program/ProgramContent';
+import { ProgramMetaInfo } from '../components/program/ProgramMetaInfo';
 
 export type ProgramNodeType = 
   | 'program'
