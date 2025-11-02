@@ -337,7 +337,7 @@ export function ProgramsPage() {
   });
 
   const handleViewDetails = (resourceId: string) => {
-    navigate({ to: '/program/$resourceId', params: { resourceId } });
+    navigate({ to: '/programs/$programId', params: { programId: resourceId } });
   };
 
   const handleRefresh = () => {
@@ -410,12 +410,6 @@ export function ProgramsPage() {
               </Text>
             </div>
             <Group gap="xs">
-              <Button
-                variant="light"
-                onClick={() => navigate({ to: '/submissions' })}
-              >
-                View Submissions
-              </Button>
               <Button
                 variant="subtle"
                 leftSection={<IconSettings size={16} />}

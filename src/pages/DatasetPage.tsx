@@ -299,7 +299,7 @@ export function DatasetPage() {
   });
 
   const handleViewDetails = (resourceId: string) => {
-    navigate({ to: '/dataset/$resourceId', params: { resourceId } });
+    navigate({ to: '/datasets/$datasetId', params: { datasetId: resourceId } });
   };
 
   const handleRefresh = () => {
@@ -391,12 +391,6 @@ export function DatasetPage() {
             </Text>
           </div>
           <Group gap="xs">
-            <Button
-              variant="light"
-              onClick={() => navigate({ to: '/submissions' })}
-            >
-              View Submissions
-            </Button>
             <Button
               variant="subtle"
               leftSection={<IconSettings size={16} />}
