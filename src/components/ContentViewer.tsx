@@ -87,14 +87,12 @@ export function ContentViewer({
               <MarkdownPreview 
                 source={content}
                 style={{ 
-                  backgroundColor: 'transparent',
-                  color: 'inherit',
                   width: '100%',
                   maxWidth: 'none',
                   minWidth: 0,
                 }}
                 wrapperElement={{
-                  'data-color-mode': 'dark'
+                  'data-color-mode': 'light'
                 }}
               />
             </div>

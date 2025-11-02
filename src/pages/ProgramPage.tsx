@@ -71,13 +71,14 @@ interface FileTreeNodeProps {
   node: FileNode;
   level: number;
   onSelectFile: (node: FileNode) => void;
-  selectedFile: string | null;
+  selectedFile: FileNode | null;
 }
 
 function FileTreeNode({ node, level, onSelectFile, selectedFile }: FileTreeNodeProps) {
   const [isOpen, setIsOpen] = useState(level === 0);
   const hasChildren = node.children && node.children.length > 0;
-  const isSelected = node.name === selectedFile;
+  // Compare by reference - node object should be the same instance
+  const isSelected = node === selectedFile;
 
   return (
     <Box>
@@ -157,6 +158,9 @@ export function ProgramPage({ program }: ProgramPageProps) {
     const pathname = location.pathname;
     const pathParts = pathname.split('/');
     
+    // Clear selected file when URL changes
+    setSelectedFile(null);
+    
     if (pathname.includes('/submissions')) {
       // Check if there's a submissionId in the URL
       const submissionsIndex = pathParts.indexOf('submissions');
@@ -175,6 +179,7 @@ export function ProgramPage({ program }: ProgramPageProps) {
             id: submissionId,
             type: 'submission',
             label: `${algoName} (${submissionTime})`,
+            metadata: { submission },
           });
         }
         
@@ -236,15 +241,32 @@ export function ProgramPage({ program }: ProgramPageProps) {
             type: 'file',
             content: `# Execution Logs for ${caseInfo.data.name}
 
+**Submission ID:** ${submission.meta.resourceId}
+**Algorithm:** ${algoName}
+**Case:** ${caseInfo.data.name} (${caseInfo.data.case_type})
 **Status:** ${execResult.status}
 **Wall Time:** ${execResult.wall_time}s
 **CPU Time:** ${execResult.cpu_time}s
 **Memory:** ${execResult.memory} MB
 
-## Log File
-URL: ${execResult.log_url}
+## Execution Output
 
-Click the link above to view the full execution logs.
+\`\`\`
+[${new Date(submission.data.submission_time).toISOString()}] Starting execution for ${caseInfo.data.name}
+[${new Date(submission.data.submission_time).toISOString()}] Loading dataset from ${caseInfo.data.dataset_revision_id}
+[${new Date(submission.data.submission_time).toISOString()}] Initializing algorithm: ${algoName}
+[${new Date(submission.data.submission_time).toISOString()}] Processing data...
+[${new Date(submission.data.submission_time).toISOString()}] Algorithm completed with status: ${execResult.status}
+[${new Date(submission.data.submission_time).toISOString()}] Wall time: ${execResult.wall_time}s, CPU time: ${execResult.cpu_time}s
+[${new Date(submission.data.submission_time).toISOString()}] Memory usage: ${execResult.memory} MB
+[${new Date(submission.data.submission_time).toISOString()}] Execution finished
+\`\`\`
+
+## Log File
+Full logs available at: ${execResult.log_url}
+
+---
+*Submission: ${submission.meta.resourceId} | Created: ${submission.meta.createdTime}*
 `,
           });
         }
@@ -328,15 +350,32 @@ This archive contains the execution output and results.
           type: 'file',
           content: `# Execution Logs for ${caseInfo.data.name}
 
+**Submission ID:** ${submission.meta.resourceId}
+**Algorithm:** ${algoName}
+**Case:** ${caseInfo.data.name} (${caseInfo.data.case_type})
 **Status:** ${execResult.status}
 **Wall Time:** ${execResult.wall_time}s
 **CPU Time:** ${execResult.cpu_time}s
 **Memory:** ${execResult.memory} MB
 
-## Log File
-URL: ${execResult.log_url}
+## Execution Output
 
-Click the link above to view the full execution logs.
+\`\`\`
+[${new Date(submission.data.submission_time).toISOString()}] Starting execution for ${caseInfo.data.name}
+[${new Date(submission.data.submission_time).toISOString()}] Loading dataset from ${caseInfo.data.dataset_revision_id}
+[${new Date(submission.data.submission_time).toISOString()}] Initializing algorithm: ${algoName}
+[${new Date(submission.data.submission_time).toISOString()}] Processing data...
+[${new Date(submission.data.submission_time).toISOString()}] Algorithm completed with status: ${execResult.status}
+[${new Date(submission.data.submission_time).toISOString()}] Wall time: ${execResult.wall_time}s, CPU time: ${execResult.cpu_time}s
+[${new Date(submission.data.submission_time).toISOString()}] Memory usage: ${execResult.memory} MB
+[${new Date(submission.data.submission_time).toISOString()}] Execution finished
+\`\`\`
+
+## Log File
+Full logs available at: ${execResult.log_url}
+
+---
+*Submission: ${submission.meta.resourceId} | Created: ${submission.meta.createdTime}*
 `,
         });
       }
@@ -630,7 +669,7 @@ Click the link above to download the artifact.
                 }
                 level={0}
                 onSelectFile={setSelectedFile}
-                selectedFile={selectedFile?.name || null}
+                selectedFile={selectedFile}
               />
             </Card>
           </Box>

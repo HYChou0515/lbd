@@ -271,6 +271,104 @@ Total Cases: ${execResults.length}
         // Otherwise show SubmissionSection table
         return <SubmissionSection onViewDetail={onSubmissionSelect} programId={programId} />;
 
+      case 'submission':
+        // Show details for a specific submission node
+        const submissionData = selectedNode.metadata?.submission;
+        if (!submissionData) {
+          return (
+            <Stack align="center" justify="center" h="100%" p="xl">
+              <Title order={3} c="dimmed">Submission not found</Title>
+            </Stack>
+          );
+        }
+
+        // Get algorithm info
+        const submissionAlgo = mockAlgoCode.find(a => a.meta.resourceId === submissionData.data.algo_id);
+        const submissionAlgoName = submissionAlgo?.data.name || 'Unknown';
+        
+        // Get execution results
+        const submissionExecResults = mockExecutionResults.filter(r => r.submission_id === submissionData.meta.resourceId);
+        const submissionExecSummary = submissionExecResults.reduce((acc, result) => {
+          acc[result.status] = (acc[result.status] || 0) + 1;
+          return acc;
+        }, {} as Record<string, number>);
+        
+        // Get evaluation results
+        const submissionEvalResults = mockEvaluationResults.filter(r => r.submission_id === submissionData.meta.resourceId);
+        
+        // Build submission detail markdown
+        let submissionMarkdown = `# Submission Details
+
+## Basic Information
+- **Algorithm:** ${submissionAlgoName}
+- **Submission ID:** ${submissionData.meta.resourceId}
+- **Submitter:** ${submissionData.data.submitter}
+- **Submission Time:** ${formatAbsoluteTime(submissionData.data.submission_time)}
+- **Created:** ${submissionData.meta.createdTime}
+
+## Execution Summary
+Total Cases: ${submissionExecResults.length}
+
+`;
+        
+        // Add execution status breakdown
+        if (Object.keys(submissionExecSummary).length > 0) {
+          submissionMarkdown += '### Status Breakdown\n';
+          Object.entries(submissionExecSummary).forEach(([status, count]) => {
+            submissionMarkdown += `- **${status}:** ${count} case(s)\n`;
+          });
+          submissionMarkdown += '\n';
+        }
+        
+        // Add evaluation results summary
+        if (submissionEvalResults.length > 0) {
+          submissionMarkdown += '## Evaluation Results\n\n';
+          submissionMarkdown += '| Case | Eval Code | Score |\n';
+          submissionMarkdown += '|------|-----------|-------|\n';
+          
+          submissionEvalResults.forEach(evalResult => {
+            const caseInfo = mockCases.find(c => c.meta.resourceId === evalResult.case_id);
+            const caseName = caseInfo?.data.name || evalResult.case_id;
+            submissionMarkdown += `| ${caseName} | ${evalResult.eval_code_id} | ${evalResult.score.toFixed(4)} |\n`;
+          });
+          submissionMarkdown += '\n';
+        }
+        
+        // Add execution details
+        if (submissionExecResults.length > 0) {
+          submissionMarkdown += '## Execution Details\n\n';
+          submissionExecResults.forEach(execResult => {
+            const caseInfo = mockCases.find(c => c.meta.resourceId === execResult.case_id);
+            const caseName = caseInfo?.data.name || execResult.case_id;
+            
+            submissionMarkdown += `### ${caseName}\n`;
+            submissionMarkdown += `- **Status:** ${execResult.status}\n`;
+            submissionMarkdown += `- **Wall Time:** ${execResult.wall_time}s\n`;
+            submissionMarkdown += `- **CPU Time:** ${execResult.cpu_time}s\n`;
+            submissionMarkdown += `- **Memory:** ${execResult.memory} MB\n`;
+            
+            if (execResult.log_url) {
+              submissionMarkdown += `- **Log URL:** ${execResult.log_url}\n`;
+            }
+            if (execResult.artifact_url) {
+              submissionMarkdown += `- **Artifact URL:** ${execResult.artifact_url}\n`;
+            }
+            submissionMarkdown += '\n';
+          });
+        }
+        
+        submissionMarkdown += `\n---\n\n*Select files from the left panel to view logs and artifacts.*`;
+        
+        return (
+          <ContentViewer
+            content={submissionMarkdown}
+            language="markdown"
+            title={`${submissionAlgoName} - ${formatAbsoluteTime(submissionData.data.submission_time)}`}
+            resourceType="code"
+            showToggle={true}
+          />
+        );
+
       case 'leaderboard':
         return (
           <Stack align="center" justify="center" h="100%" p="xl">
