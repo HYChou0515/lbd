@@ -50,7 +50,9 @@ export type ProgramNodeType =
   | 'eval-code'
   | 'code'
   | 'submissions'
-  | 'leaderboard';
+  | 'submission'
+  | 'leaderboard'
+  | 'pagination';
 
 export type ProgramNode = {
   id: string;
@@ -148,6 +150,7 @@ export function ProgramPage({ program }: ProgramPageProps) {
   const [selectedNode, setSelectedNode] = useState<ProgramNode | null>(null);
   const [selectedFile, setSelectedFile] = useState<FileNode | null>(null);
   const [selectedSubmissionId, setSelectedSubmissionId] = useState<string | null>(null);
+  const [submissionsPage, setSubmissionsPage] = useState(0);
 
   // Set selectedNode and selectedSubmissionId based on URL path
   useEffect(() => {
@@ -155,17 +158,45 @@ export function ProgramPage({ program }: ProgramPageProps) {
     const pathParts = pathname.split('/');
     
     if (pathname.includes('/submissions')) {
-      setSelectedNode({
-        id: 'submissions',
-        type: 'submissions',
-        label: 'Submissions',
-      });
-      
       // Check if there's a submissionId in the URL
       const submissionsIndex = pathParts.indexOf('submissions');
       if (submissionsIndex !== -1 && pathParts[submissionsIndex + 1]) {
-        setSelectedSubmissionId(pathParts[submissionsIndex + 1]);
+        const submissionId = pathParts[submissionsIndex + 1];
+        setSelectedSubmissionId(submissionId);
+        
+        // Find the submission and set it as selected node
+        const submission = mockSubmissions.find(s => s.meta.resourceId === submissionId);
+        if (submission) {
+          const algo = mockAlgoCode.find(a => a.meta.resourceId === submission.data.algo_id);
+          const algoName = algo?.data.name || 'Unknown';
+          const submissionTime = formatAbsoluteTime(submission.data.submission_time);
+          
+          setSelectedNode({
+            id: submissionId,
+            type: 'submission',
+            label: `${algoName} (${submissionTime})`,
+          });
+        }
+        
+        // Find which page this submission is on and navigate to it
+        const CURRENT_USER = 'user1';
+        const SUBMISSIONS_PER_PAGE = 5;
+        const allSubmissions = mockSubmissions
+          .filter(s => s.data.submitter === CURRENT_USER)
+          .sort((a, b) => new Date(b.data.submission_time).getTime() - new Date(a.data.submission_time).getTime());
+        
+        const submissionIndex = allSubmissions.findIndex(s => s.meta.resourceId === submissionId);
+        if (submissionIndex !== -1) {
+          const targetPage = Math.floor(submissionIndex / SUBMISSIONS_PER_PAGE);
+          setSubmissionsPage(targetPage);
+        }
       } else {
+        // No specific submission selected, select submissions node
+        setSelectedNode({
+          id: 'submissions',
+          type: 'submissions',
+          label: 'Submissions',
+        });
         setSelectedSubmissionId(null);
       }
     }
@@ -561,22 +592,26 @@ Click the link above to download the artifact.
         </>
       }
       leftPanel={
-        <Stack gap="lg">
-          {/* Program Structure */}
-          <Box>
+        <Stack gap="lg" style={{ height: '100%', overflow: 'hidden' }}>
+          {/* Program Structure - max 60% height */}
+          <Box style={{ maxHeight: '60%', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
             <Title order={5} mb="md">Program Structure</Title>
-            <ProgramTree
-              program={program}
-              selectedNode={selectedNode}
-              onNodeSelect={setSelectedNode}
-              programId={program.meta.resourceId}
-            />
+            <Box style={{ flex: 1, overflow: 'auto', minHeight: 0 }}>
+              <ProgramTree
+                program={program}
+                selectedNode={selectedNode}
+                onNodeSelect={setSelectedNode}
+                programId={program.meta.resourceId}
+                submissionsPage={submissionsPage}
+                onSubmissionsPageChange={setSubmissionsPage}
+              />
+            </Box>
           </Box>
 
-          <Divider my="xl" />
+          <Divider />
 
-          {/* File Structure - show submission files if a submission is selected */}
-          <Box>
+          {/* File Structure - flexible height */}
+          <Box style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
             <Title order={5} mb="md">
               {selectedSubmissionId 
                 ? 'Submission Files' 
@@ -584,7 +619,7 @@ Click the link above to download the artifact.
                   ? 'Recent Submissions'
                   : 'Program Files'}
             </Title>
-            <Card withBorder>
+            <Card withBorder style={{ flex: 1, overflow: 'auto', minHeight: 0 }}>
               <FileTreeNode
                 node={
                   selectedSubmissionId && submissionFileStructure 
