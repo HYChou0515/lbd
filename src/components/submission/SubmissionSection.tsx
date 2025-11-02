@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { useNavigate } from '@tanstack/react-router';
 import {
   Group,
   MultiSelect,
@@ -48,9 +49,11 @@ const CURRENT_USER = 'user1';
 
 interface SubmissionSectionProps {
   onViewDetail?: (submissionId: string | null) => void;
+  programId: string;
 }
 
-export function SubmissionSection({ onViewDetail }: SubmissionSectionProps) {
+export function SubmissionSection({ onViewDetail, programId }: SubmissionSectionProps) {
+  const navigate = useNavigate();
   // Filter submissions to only show current user's submissions
   const mySubmissions = useMemo(
     () => mockSubmissions.filter(s => s.data.submitter === CURRENT_USER),
@@ -258,7 +261,16 @@ export function SubmissionSection({ onViewDetail }: SubmissionSectionProps) {
               size="sm"
               variant="light"
               color="blue"
-              onClick={() => onViewDetail?.(row.original.submission.meta.resourceId)}
+              onClick={() => {
+                const submissionId = row.original.submission.meta.resourceId;
+                // Navigate to submission detail URL
+                navigate({ 
+                  to: '/programs/$programId/submissions/$submissionId', 
+                  params: { programId, submissionId } 
+                });
+                // Also call the callback for state management
+                onViewDetail?.(submissionId);
+              }}
             >
               <IconEye size={16} />
             </ActionIcon>

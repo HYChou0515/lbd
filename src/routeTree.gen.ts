@@ -15,6 +15,9 @@ import { Route as ProgramsIndexRouteImport } from './routes/programs/index'
 import { Route as DatasetsIndexRouteImport } from './routes/datasets/index'
 import { Route as ProgramsProgramIdRouteImport } from './routes/programs/$programId'
 import { Route as DatasetsDatasetIdRouteImport } from './routes/datasets/$datasetId'
+import { Route as ProgramsProgramIdIndexRouteImport } from './routes/programs/$programId/index'
+import { Route as ProgramsProgramIdSubmissionsRouteImport } from './routes/programs/$programId/submissions'
+import { Route as ProgramsProgramIdSubmissionsSubmissionIdRouteImport } from './routes/programs/$programId/submissions/$submissionId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -46,31 +49,56 @@ const DatasetsDatasetIdRoute = DatasetsDatasetIdRouteImport.update({
   path: '/datasets/$datasetId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProgramsProgramIdIndexRoute = ProgramsProgramIdIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => ProgramsProgramIdRoute,
+} as any)
+const ProgramsProgramIdSubmissionsRoute =
+  ProgramsProgramIdSubmissionsRouteImport.update({
+    id: '/submissions',
+    path: '/submissions',
+    getParentRoute: () => ProgramsProgramIdRoute,
+  } as any)
+const ProgramsProgramIdSubmissionsSubmissionIdRoute =
+  ProgramsProgramIdSubmissionsSubmissionIdRouteImport.update({
+    id: '/$submissionId',
+    path: '/$submissionId',
+    getParentRoute: () => ProgramsProgramIdSubmissionsRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/datasets/$datasetId': typeof DatasetsDatasetIdRoute
-  '/programs/$programId': typeof ProgramsProgramIdRoute
+  '/programs/$programId': typeof ProgramsProgramIdRouteWithChildren
   '/datasets': typeof DatasetsIndexRoute
   '/programs': typeof ProgramsIndexRoute
   '/submissions': typeof SubmissionsIndexRoute
+  '/programs/$programId/submissions': typeof ProgramsProgramIdSubmissionsRouteWithChildren
+  '/programs/$programId/': typeof ProgramsProgramIdIndexRoute
+  '/programs/$programId/submissions/$submissionId': typeof ProgramsProgramIdSubmissionsSubmissionIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/datasets/$datasetId': typeof DatasetsDatasetIdRoute
-  '/programs/$programId': typeof ProgramsProgramIdRoute
   '/datasets': typeof DatasetsIndexRoute
   '/programs': typeof ProgramsIndexRoute
   '/submissions': typeof SubmissionsIndexRoute
+  '/programs/$programId/submissions': typeof ProgramsProgramIdSubmissionsRouteWithChildren
+  '/programs/$programId': typeof ProgramsProgramIdIndexRoute
+  '/programs/$programId/submissions/$submissionId': typeof ProgramsProgramIdSubmissionsSubmissionIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/datasets/$datasetId': typeof DatasetsDatasetIdRoute
-  '/programs/$programId': typeof ProgramsProgramIdRoute
+  '/programs/$programId': typeof ProgramsProgramIdRouteWithChildren
   '/datasets/': typeof DatasetsIndexRoute
   '/programs/': typeof ProgramsIndexRoute
   '/submissions/': typeof SubmissionsIndexRoute
+  '/programs/$programId/submissions': typeof ProgramsProgramIdSubmissionsRouteWithChildren
+  '/programs/$programId/': typeof ProgramsProgramIdIndexRoute
+  '/programs/$programId/submissions/$submissionId': typeof ProgramsProgramIdSubmissionsSubmissionIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -81,14 +109,19 @@ export interface FileRouteTypes {
     | '/datasets'
     | '/programs'
     | '/submissions'
+    | '/programs/$programId/submissions'
+    | '/programs/$programId/'
+    | '/programs/$programId/submissions/$submissionId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/datasets/$datasetId'
-    | '/programs/$programId'
     | '/datasets'
     | '/programs'
     | '/submissions'
+    | '/programs/$programId/submissions'
+    | '/programs/$programId'
+    | '/programs/$programId/submissions/$submissionId'
   id:
     | '__root__'
     | '/'
@@ -97,12 +130,15 @@ export interface FileRouteTypes {
     | '/datasets/'
     | '/programs/'
     | '/submissions/'
+    | '/programs/$programId/submissions'
+    | '/programs/$programId/'
+    | '/programs/$programId/submissions/$submissionId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DatasetsDatasetIdRoute: typeof DatasetsDatasetIdRoute
-  ProgramsProgramIdRoute: typeof ProgramsProgramIdRoute
+  ProgramsProgramIdRoute: typeof ProgramsProgramIdRouteWithChildren
   DatasetsIndexRoute: typeof DatasetsIndexRoute
   ProgramsIndexRoute: typeof ProgramsIndexRoute
   SubmissionsIndexRoute: typeof SubmissionsIndexRoute
@@ -152,13 +188,63 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DatasetsDatasetIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/programs/$programId/': {
+      id: '/programs/$programId/'
+      path: '/'
+      fullPath: '/programs/$programId/'
+      preLoaderRoute: typeof ProgramsProgramIdIndexRouteImport
+      parentRoute: typeof ProgramsProgramIdRoute
+    }
+    '/programs/$programId/submissions': {
+      id: '/programs/$programId/submissions'
+      path: '/submissions'
+      fullPath: '/programs/$programId/submissions'
+      preLoaderRoute: typeof ProgramsProgramIdSubmissionsRouteImport
+      parentRoute: typeof ProgramsProgramIdRoute
+    }
+    '/programs/$programId/submissions/$submissionId': {
+      id: '/programs/$programId/submissions/$submissionId'
+      path: '/$submissionId'
+      fullPath: '/programs/$programId/submissions/$submissionId'
+      preLoaderRoute: typeof ProgramsProgramIdSubmissionsSubmissionIdRouteImport
+      parentRoute: typeof ProgramsProgramIdSubmissionsRoute
+    }
   }
 }
+
+interface ProgramsProgramIdSubmissionsRouteChildren {
+  ProgramsProgramIdSubmissionsSubmissionIdRoute: typeof ProgramsProgramIdSubmissionsSubmissionIdRoute
+}
+
+const ProgramsProgramIdSubmissionsRouteChildren: ProgramsProgramIdSubmissionsRouteChildren =
+  {
+    ProgramsProgramIdSubmissionsSubmissionIdRoute:
+      ProgramsProgramIdSubmissionsSubmissionIdRoute,
+  }
+
+const ProgramsProgramIdSubmissionsRouteWithChildren =
+  ProgramsProgramIdSubmissionsRoute._addFileChildren(
+    ProgramsProgramIdSubmissionsRouteChildren,
+  )
+
+interface ProgramsProgramIdRouteChildren {
+  ProgramsProgramIdSubmissionsRoute: typeof ProgramsProgramIdSubmissionsRouteWithChildren
+  ProgramsProgramIdIndexRoute: typeof ProgramsProgramIdIndexRoute
+}
+
+const ProgramsProgramIdRouteChildren: ProgramsProgramIdRouteChildren = {
+  ProgramsProgramIdSubmissionsRoute:
+    ProgramsProgramIdSubmissionsRouteWithChildren,
+  ProgramsProgramIdIndexRoute: ProgramsProgramIdIndexRoute,
+}
+
+const ProgramsProgramIdRouteWithChildren =
+  ProgramsProgramIdRoute._addFileChildren(ProgramsProgramIdRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DatasetsDatasetIdRoute: DatasetsDatasetIdRoute,
-  ProgramsProgramIdRoute: ProgramsProgramIdRoute,
+  ProgramsProgramIdRoute: ProgramsProgramIdRouteWithChildren,
   DatasetsIndexRoute: DatasetsIndexRoute,
   ProgramsIndexRoute: ProgramsIndexRoute,
   SubmissionsIndexRoute: SubmissionsIndexRoute,

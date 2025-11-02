@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from '@tanstack/react-router';
 import { Box, Group, ActionIcon, Text, Collapse } from '@mantine/core';
 import {
   IconFolder,
@@ -19,6 +20,7 @@ interface ProgramTreeProps {
   program: Resource<Program>;
   selectedNode: ProgramNode | null;
   onNodeSelect: (node: ProgramNode) => void;
+  programId: string;
 }
 
 interface TreeNodeProps {
@@ -26,9 +28,11 @@ interface TreeNodeProps {
   level: number;
   selectedNode: ProgramNode | null;
   onNodeSelect: (node: ProgramNode) => void;
+  programId: string;
 }
 
-function TreeNode({ node, level, selectedNode, onNodeSelect }: TreeNodeProps) {
+function TreeNode({ node, level, selectedNode, onNodeSelect, programId }: TreeNodeProps) {
+  const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(level === 0); // Root node starts open
   const hasChildren = node.children && node.children.length > 0;
   const isSelected = selectedNode?.id === node.id;
@@ -71,6 +75,10 @@ function TreeNode({ node, level, selectedNode, onNodeSelect }: TreeNodeProps) {
           borderRadius: 4,
         }}
         onClick={() => {
+          // If clicking submissions node, navigate to submissions URL
+          if (node.type === 'submissions') {
+            navigate({ to: '/programs/$programId/submissions', params: { programId } });
+          }
           onNodeSelect(node);
           if (hasChildren) {
             setIsOpen(!isOpen);
@@ -120,6 +128,7 @@ function TreeNode({ node, level, selectedNode, onNodeSelect }: TreeNodeProps) {
               level={level + 1}
               selectedNode={selectedNode}
               onNodeSelect={onNodeSelect}
+              programId={programId}
             />
           ))}
         </Collapse>
@@ -128,7 +137,7 @@ function TreeNode({ node, level, selectedNode, onNodeSelect }: TreeNodeProps) {
   );
 }
 
-export function ProgramTree({ program, selectedNode, onNodeSelect }: ProgramTreeProps) {
+export function ProgramTree({ program, selectedNode, onNodeSelect, programId }: ProgramTreeProps) {
   // Build tree structure from program data
   const buildTreeData = (): ProgramNode => {
     // Group cases by type
@@ -219,6 +228,7 @@ export function ProgramTree({ program, selectedNode, onNodeSelect }: ProgramTree
         level={0}
         selectedNode={selectedNode}
         onNodeSelect={onNodeSelect}
+        programId={programId}
       />
     </Box>
   );

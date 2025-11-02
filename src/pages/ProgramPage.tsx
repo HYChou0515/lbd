@@ -1,5 +1,5 @@
-import { useState, useMemo } from 'react';
-import { useNavigate } from '@tanstack/react-router';
+import { useState, useMemo, useEffect } from 'react';
+import { useNavigate, useLocation } from '@tanstack/react-router';
 import {
   Title,
   Text,
@@ -142,9 +142,32 @@ function FileTreeNode({ node, level, onSelectFile, selectedFile }: FileTreeNodeP
 
 export function ProgramPage({ program }: ProgramPageProps) {
   const navigate = useNavigate();
+  const location = useLocation();
   const [selectedNode, setSelectedNode] = useState<ProgramNode | null>(null);
   const [selectedFile, setSelectedFile] = useState<FileNode | null>(null);
   const [selectedSubmissionId, setSelectedSubmissionId] = useState<string | null>(null);
+
+  // Set selectedNode and selectedSubmissionId based on URL path
+  useEffect(() => {
+    const pathname = location.pathname;
+    const pathParts = pathname.split('/');
+    
+    if (pathname.includes('/submissions')) {
+      setSelectedNode({
+        id: 'submissions',
+        type: 'submissions',
+        label: 'Submissions',
+      });
+      
+      // Check if there's a submissionId in the URL
+      const submissionsIndex = pathParts.indexOf('submissions');
+      if (submissionsIndex !== -1 && pathParts[submissionsIndex + 1]) {
+        setSelectedSubmissionId(pathParts[submissionsIndex + 1]);
+      } else {
+        setSelectedSubmissionId(null);
+      }
+    }
+  }, [location.pathname]);
 
   // Generate submissions list for left panel when in submissions view
   const recentSubmissionsStructure = useMemo<FileNode>(() => {
@@ -333,7 +356,19 @@ Click the link above to download the artifact.
     <Anchor key="programs" href="/programs" onClick={(e) => { e.preventDefault(); navigate({ to: '/programs' }); }}>
       Programs
     </Anchor>,
-    <Text key="current">{program.data.name}</Text>,
+    <Anchor 
+      key="current" 
+      href={`/programs/${program.meta.resourceId}`}
+      onClick={(e) => { 
+        e.preventDefault(); 
+        navigate({ to: '/programs/$programId', params: { programId: program.meta.resourceId } });
+        setSelectedNode(null);
+        setSelectedSubmissionId(null);
+        setSelectedFile(null);
+      }}
+    >
+      {program.data.name}
+    </Anchor>,
   ];
 
   // Add additional breadcrumb items based on selected node
@@ -341,9 +376,10 @@ Click the link above to download the artifact.
     breadcrumbItems.push(
       <Anchor 
         key="submissions" 
-        href="#"
+        href={`/programs/${program.meta.resourceId}/submissions`}
         onClick={(e) => { 
           e.preventDefault(); 
+          navigate({ to: '/programs/$programId/submissions', params: { programId: program.meta.resourceId } });
           setSelectedSubmissionId(null); // 清除選中的 submission
           setSelectedFile(null); // 清除選中的文件
         }}
@@ -431,6 +467,7 @@ Click the link above to download the artifact.
               program={program}
               selectedNode={selectedNode}
               onNodeSelect={setSelectedNode}
+              programId={program.meta.resourceId}
             />
           </Box>
 
@@ -468,6 +505,7 @@ Click the link above to download the artifact.
           selectedNode={selectedNode}
           onSubmissionSelect={setSelectedSubmissionId}
           selectedFile={selectedFile}
+          programId={program.meta.resourceId}
         />
       }
       rightPanel={

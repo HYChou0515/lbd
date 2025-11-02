@@ -12,9 +12,10 @@ interface ProgramContentProps {
   selectedNode: ProgramNode | null;
   onSubmissionSelect?: (submissionId: string | null) => void;
   selectedFile?: FileNode | null;
+  programId: string;
 }
 
-export function ProgramContent({ program, selectedNode, onSubmissionSelect, selectedFile }: ProgramContentProps) {
+export function ProgramContent({ program, selectedNode, onSubmissionSelect, selectedFile, programId }: ProgramContentProps) {
 
   // If a file is selected, show its content
   if (selectedFile) {
@@ -160,7 +161,7 @@ def sample_algorithm():
 
       case 'submissions':
         // Show SubmissionSection inline without changing route
-        return <SubmissionSection onViewDetail={onSubmissionSelect} />;
+        return <SubmissionSection onViewDetail={onSubmissionSelect} programId={programId} />;
 
       case 'leaderboard':
         return (
