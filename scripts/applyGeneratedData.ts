@@ -24,8 +24,8 @@ const CONFIG = {
   numUsers: 10,
   submissionsPerUser: 50,
   // Use actual case IDs from mockProgramData
+  // Only generate data for open data cases (OD1, OD2)
   caseIds: ['case-od1', 'case-od2'],
-//   caseIds: ['case-od1', 'case-od2', 'case-oe1', 'case-oe2', 'case-ce1', 'case-ce2', 'case-ce3'],
   // Use actual eval code IDs from mockProgramData
   evalCodeIds: ['eval-code-1', 'eval-code-2'],
   programId: 'program-001',
@@ -166,7 +166,8 @@ function generateExecutionSection(executionResults: any[]): string {
     lines.push(`    wall_time: ${exec.wall_time},`);
     lines.push(`    cpu_time: ${exec.cpu_time},`);
     lines.push(`    memory: ${exec.memory},`);
-    lines.push(`    exit_code: ${exec.exit_code},`);
+    lines.push(`    log_url: '${exec.log_url}',`);
+    lines.push(`    artifact_url: '${exec.artifact_url}',`);
     lines.push(idx < executionResults.length - 1 ? '  },' : '  }');
   });
   
@@ -186,6 +187,7 @@ function generateEvaluationSection(evaluationResults: any[]): string {
     lines.push(`    case_id: '${evalResult.case_id}',`);
     lines.push(`    eval_code_id: '${evalResult.eval_code_id}',`);
     lines.push(`    score: ${evalResult.score},`);
+    lines.push(`    evaluated_at: '${evalResult.evaluated_at}',`);
     lines.push(idx < evaluationResults.length - 1 ? '  },' : '  }');
   });
   

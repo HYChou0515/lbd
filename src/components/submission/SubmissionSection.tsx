@@ -1,8 +1,6 @@
 import { useState, useMemo } from 'react';
 import {
-  Stack,
   Group,
-  Title,
   MultiSelect,
   Text,
   Badge,
@@ -17,6 +15,7 @@ import {
   IconFileText,
   IconTable,
   IconChartLine,
+  IconEye,
 } from '@tabler/icons-react';
 import { MantineReactTable, type MRT_ColumnDef } from 'mantine-react-table';
 import { 
@@ -27,16 +26,16 @@ import {
   mockCases,
   mockEvalCode,
   mockAlgoCode,
-} from '../data/mockProgramData';
+} from '../../data/mockProgramData';
 import type { 
   ExecutionResult,
   EvaluationResult,
   Submission,
   ChartType,
-} from '../types/program';
-import type { Resource } from '../types/meta';
-import { TimeDisplay } from '../components/TimeDisplay';
-import { SubmissionCharts } from '../components/submission/SubmissionCharts';
+} from '../../types/program';
+import type { Resource } from '../../types/meta';
+import { TimeDisplay } from '../TimeDisplay';
+import { SubmissionCharts } from './SubmissionCharts';
 
 // Table row type
 type SubmissionRow = {
@@ -47,7 +46,11 @@ type SubmissionRow = {
 // Current user (in real app, this would come from auth context)
 const CURRENT_USER = 'user1';
 
-export function SubmissionPage() {
+interface SubmissionSectionProps {
+  onViewDetail?: (submissionId: string | null) => void;
+}
+
+export function SubmissionSection({ onViewDetail }: SubmissionSectionProps) {
   // Filter submissions to only show current user's submissions
   const mySubmissions = useMemo(
     () => mockSubmissions.filter(s => s.data.submitter === CURRENT_USER),
@@ -243,6 +246,25 @@ export function SubmissionPage() {
           />
         ),
       },
+      {
+        id: 'view_detail',
+        header: 'View Detail',
+        size: 100,
+        enableSorting: false,
+        enableResizing: false,
+        Cell: ({ row }) => (
+          <Tooltip label="View submission files">
+            <ActionIcon
+              size="sm"
+              variant="light"
+              color="blue"
+              onClick={() => onViewDetail?.(row.original.submission.meta.resourceId)}
+            >
+              <IconEye size={16} />
+            </ActionIcon>
+          </Tooltip>
+        ),
+      },
     ];
 
     // Add columns for each case - with grouping
@@ -259,7 +281,8 @@ export function SubmissionPage() {
             caseColumns.push({
               id: key,
               header: '',
-              size: 100,
+              size: 95,
+              enableResizing: false,
               enableSorting: false,
               Cell: ({ row }) => {
                 const execResult = row.original[`${caseItem.meta.resourceId}_execResult`] as ExecutionResult | undefined;
@@ -282,7 +305,8 @@ export function SubmissionPage() {
             caseColumns.push({
               id: key,
               header: '',
-              size: 80,
+              size: 45,
+              enableResizing: false,
               enableSorting: false,
               Cell: ({ row }) => {
                 const execResult = row.original[`${caseItem.meta.resourceId}_execResult`] as ExecutionResult | undefined;
@@ -310,7 +334,8 @@ export function SubmissionPage() {
             caseColumns.push({
               id: key,
               header: '',
-              size: 80,
+              size: 45,
+              enableResizing: false,
               enableSorting: false,
               Cell: ({ row }) => {
                 const execResult = row.original[`${caseItem.meta.resourceId}_execResult`] as ExecutionResult | undefined;
@@ -376,156 +401,163 @@ export function SubmissionPage() {
   }, [filteredCases, filteredMetrics]);
 
   return (
-    <Stack gap="lg" p="lg">
-      {/* Header */}
-      <Group justify="space-between">
-        <div>
-          <Title order={2}>My Submissions - {mockProgram.data.name}</Title>
-          <Text size="sm" c="dimmed" mt={4}>
-            Showing {mySubmissions.length} submission{mySubmissions.length !== 1 ? 's' : ''} by {CURRENT_USER}
+    <Box style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      {/* Header with ContentViewer style */}
+      <Box p="md" style={{ borderBottom: '1px solid var(--mantine-color-gray-3)', flexShrink: 0 }}>
+        <Group justify="space-between" wrap="nowrap">
+          <Text size="sm" c="dimmed" ff="monospace">
+            My Submissions - {mockProgram.data.name} ({mySubmissions.length} submission{mySubmissions.length !== 1 ? 's' : ''})
           </Text>
-        </div>
-        
-        <Group gap="md">
-          {/* View Mode Toggle */}
-          <SegmentedControl
-            value={viewMode}
-            onChange={(value) => setViewMode(value as 'table' | 'chart')}
-            data={[
-              {
-                value: 'table',
-                label: (
-                  <Group gap={8} wrap="nowrap">
-                    <IconTable size={16} />
-                    <span>Table</span>
-                  </Group>
-                ),
-              },
-              {
-                value: 'chart',
-                label: (
-                  <Group gap={8} wrap="nowrap">
-                    <IconChartLine size={16} />
-                    <span>Chart</span>
-                  </Group>
-                ),
-              },
-            ]}
-          />
           
-          {/* Chart Type Selector (only show in chart mode) */}
-          {viewMode === 'chart' && (
-            <Select
-              value={chartType}
-              onChange={(value) => setChartType(value as ChartType)}
+          <Group gap="xs">
+            {/* View Mode Toggle */}
+            <SegmentedControl
+              size="xs"
+              value={viewMode}
+              onChange={(value) => setViewMode(value as 'table' | 'chart')}
               data={[
-                { value: 'trend', label: 'Trend Chart' },
-                { value: 'scatter', label: 'Scatter Plot' },
-                { value: 'pareto', label: 'Pareto Chart' },
+                {
+                  value: 'table',
+                  label: (
+                    <Group gap={4} wrap="nowrap">
+                      <IconTable size={14} />
+                      <span>Table</span>
+                    </Group>
+                  ),
+                },
+                {
+                  value: 'chart',
+                  label: (
+                    <Group gap={4} wrap="nowrap">
+                      <IconChartLine size={14} />
+                      <span>Chart</span>
+                    </Group>
+                  ),
+                },
               ]}
-              style={{ width: 150 }}
-            />
-          )}
-        </Group>
-      </Group>
-
-      {/* Conditionally render Table or Chart */}
-      {viewMode === 'table' ? (
-        <>
-          {/* Filters */}
-          <Group gap="md">
-            <MultiSelect
-              label="Cases"
-              placeholder="Select cases"
-              data={caseOptions}
-              value={selectedCases}
-              onChange={setSelectedCases}
-              style={{ flex: 1 }}
-              clearable
-              searchable
-              description="Filter by specific cases (empty = all)"
             />
             
-            <MultiSelect
-              label="Columns"
-              placeholder="Select columns to display"
-              data={columnOptions}
-              value={selectedEvals}
-              onChange={setSelectedEvals}
-              style={{ flex: 1 }}
-              clearable
-              searchable
-              description="Choose which columns to display (empty = all)"
-            />
+            {/* Chart Type Selector (only show in chart mode) */}
+            {viewMode === 'chart' && (
+              <Select
+                size="xs"
+                value={chartType}
+                onChange={(value) => setChartType(value as ChartType)}
+                data={[
+                  { value: 'trend', label: 'Trend' },
+                  { value: 'scatter', label: 'Scatter' },
+                  { value: 'pareto', label: 'Pareto' },
+                ]}
+                style={{ width: 120 }}
+              />
+            )}
           </Group>
+        </Group>
+      </Box>
 
-          {/* Table */}
-          <MantineReactTable
-            columns={columns}
-            data={tableData}
-            enableSorting
-            enableColumnResizing
-            enableColumnFilters={false}
-            enableGlobalFilter={false}
-            enablePagination={false}
-            enableBottomToolbar={false}
-            enableTopToolbar={false}
-            enableColumnActions={false}
-            enableColumnPinning
-            enableStickyHeader
-            enableRowVirtualization
-            mantineTableContainerProps={{
-              style: {
-                maxHeight: 'calc(100vh - 280px)',
-              },
-            }}
-            rowVirtualizerOptions={{
-                overscan: 25, //adjust the number or rows that are rendered above and below the visible area of the table
-                estimateSize: () => 100, //if your rows are taller than normal, try tweaking this value to make scrollbar size more accurate
-            }}
-            mantineTableProps={{
-              highlightOnHover: true,
-              withColumnBorders: true,
-              withTableBorder: true,
-            }}
-            mantineTableHeadCellProps={{
-              style: {
-                fontSize: '12px',
-                fontWeight: 600,
-              },
-            }}
-            initialState={{
-              density: 'xs',
-              columnPinning: {
-                left: ['submission.data.algo_id', 'submission.data.submission_time'],
-              },
-            }}
-          />
-        </>
-      ) : (
-        <SubmissionCharts
-          submissions={mySubmissions}
-          evaluationResults={mockEvaluationResults}
-          executionResults={mockExecutionResults}
-          chartType={chartType}
-          selectedCase={chartCase}
-          selectedMetricX={chartMetricX}
-          selectedMetricY={chartMetricY}
-          cases={availableCases.map(c => ({ value: c.meta.resourceId, label: c.data.name }))}
-          metrics={[
-            ...mockEvalCode.map(e => ({ value: e.meta.resourceId, label: e.data.name })),
-            { value: '__wall_time__', label: 'Wall Time' },
-            { value: '__cpu_time__', label: 'CPU Time' },
-            { value: '__memory__', label: 'Memory' },
-          ]}
-          onCaseChange={(value) => setChartCase(value || '')}
-          onMetricXChange={(value) => setChartMetricX(value || '')}
-          onMetricYChange={(value) => setChartMetricY(value || '')}
-          algoNames={Object.fromEntries(
-            mockAlgoCode.map(algo => [algo.meta.resourceId, algo.data.name])
-          )}
-        />
-      )}
-    </Stack>
+      {/* Main content area */}
+      <Box style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+        {viewMode === 'table' ? (
+          <>
+            {/* Filters */}
+            <Box p="md" pb={0} style={{ flexShrink: 0 }}>
+              <Group gap="md">
+                <MultiSelect
+                  size="xs"
+                  label="Cases"
+                  placeholder="Select cases"
+                  data={caseOptions}
+                  value={selectedCases}
+                  onChange={setSelectedCases}
+                  style={{ flex: 1 }}
+                  clearable
+                  searchable
+                  description="Filter by specific cases (empty = all)"
+                />
+                
+                <MultiSelect
+                  size="xs"
+                  label="Columns"
+                  placeholder="Select columns to display"
+                  data={columnOptions}
+                  value={selectedEvals}
+                  onChange={setSelectedEvals}
+                  style={{ flex: 1 }}
+                  clearable
+                  searchable
+                  description="Choose which columns to display (empty = all)"
+                />
+              </Group>
+            </Box>
+
+            {/* Table */}
+            <Box px="md" pb="md" pt="sm" style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
+              <MantineReactTable
+                columns={columns}
+                data={tableData}
+                enableSorting
+                enableColumnResizing
+                enableColumnFilters={false}
+                enableGlobalFilter={false}
+                enablePagination={false}
+                enableBottomToolbar={false}
+                enableTopToolbar={false}
+                enableColumnActions={false}
+                enableStickyHeader
+                enableColumnPinning
+                enableRowVirtualization
+                mantineTableContainerProps={{
+                  style: {
+                    maxHeight: '60vh',
+                  },
+                }}
+                mantineTableProps={{
+                  highlightOnHover: true,
+                  withColumnBorders: true,
+                  withTableBorder: true,
+                }}
+                mantineTableHeadCellProps={{
+                  style: {
+                    fontSize: '12px',
+                    fontWeight: 600,
+                  },
+                }}
+                initialState={{
+                  density: 'xs',
+                  columnPinning: {
+                    left: ['submission.data.algo_id', 'submission.data.submission_time', 'view_detail'],
+                  },
+                }}
+              />
+            </Box>
+          </>
+        ) : (
+          <Box p="md" style={{ height: '100%', overflow: 'auto' }}>
+            <SubmissionCharts
+              submissions={mySubmissions}
+              evaluationResults={mockEvaluationResults}
+              executionResults={mockExecutionResults}
+              chartType={chartType}
+              selectedCase={chartCase}
+              selectedMetricX={chartMetricX}
+              selectedMetricY={chartMetricY}
+              cases={availableCases.map(c => ({ value: c.meta.resourceId, label: c.data.name }))}
+              metrics={[
+                ...mockEvalCode.map(e => ({ value: e.meta.resourceId, label: e.data.name })),
+                { value: '__wall_time__', label: 'Wall Time' },
+                { value: '__cpu_time__', label: 'CPU Time' },
+                { value: '__memory__', label: 'Memory' },
+              ]}
+              onCaseChange={(value) => setChartCase(value || '')}
+              onMetricXChange={(value) => setChartMetricX(value || '')}
+              onMetricYChange={(value) => setChartMetricY(value || '')}
+              algoNames={Object.fromEntries(
+                mockAlgoCode.map(algo => [algo.meta.resourceId, algo.data.name])
+              )}
+            />
+          </Box>
+        )}
+      </Box>
+    </Box>
   );
 }

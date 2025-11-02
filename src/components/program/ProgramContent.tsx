@@ -2,16 +2,52 @@ import { Stack, Title, Text, Box } from '@mantine/core';
 import type { ProgramNode } from '../../pages/ProgramPage';
 import type { Resource } from '../../types/meta';
 import type { Program } from '../../types/program';
-import { SubmissionPage } from '../../pages/SubmissionPage';
+import { SubmissionSection } from '../submission/SubmissionSection';
 import { ContentViewer } from '../ContentViewer';
 import { generateCaseMarkdown } from '../../utils/contentGenerators';
+import type { FileNode } from '../../data/mockFileStructure';
 
 interface ProgramContentProps {
   program: Resource<Program>;
   selectedNode: ProgramNode | null;
+  onSubmissionSelect?: (submissionId: string | null) => void;
+  selectedFile?: FileNode | null;
 }
 
-export function ProgramContent({ program, selectedNode }: ProgramContentProps) {
+export function ProgramContent({ program, selectedNode, onSubmissionSelect, selectedFile }: ProgramContentProps) {
+
+  // If a file is selected, show its content
+  if (selectedFile) {
+    // Determine language based on file extension
+    let language = 'plaintext';
+    let showToggle = false;
+    
+    if (selectedFile.name.endsWith('.md')) {
+      language = 'markdown';
+      showToggle = true;
+    } else if (selectedFile.name.endsWith('.py')) {
+      language = 'python';
+    } else if (selectedFile.name.endsWith('.js') || selectedFile.name.endsWith('.ts')) {
+      language = 'javascript';
+    } else if (selectedFile.name.endsWith('.json')) {
+      language = 'json';
+    } else if (selectedFile.name.endsWith('.yml') || selectedFile.name.endsWith('.yaml')) {
+      language = 'yaml';
+    } else if (selectedFile.name === 'logs') {
+      language = 'markdown'; // logs 檔案用 markdown 顯示
+      showToggle = true;
+    }
+    
+    return (
+      <ContentViewer
+        content={selectedFile.content || 'No content available'}
+        language={language}
+        title={selectedFile.name}
+        resourceType="file"
+        showToggle={showToggle}
+      />
+    );
+  }
 
   if (!selectedNode) {
     return (
@@ -123,8 +159,8 @@ def sample_algorithm():
         );
 
       case 'submissions':
-        // Show SubmissionPage inline without changing route
-        return <SubmissionPage />;
+        // Show SubmissionSection inline without changing route
+        return <SubmissionSection onViewDetail={onSubmissionSelect} />;
 
       case 'leaderboard':
         return (

@@ -229,6 +229,7 @@ export function SubmissionCharts({
                 label={{ value: 'Submission #', position: 'insideBottom', offset: -10 }}
               />
               <YAxis 
+                domain={['dataMin - dataMin * 0.1', 'dataMax + dataMax * 0.1']}
                 label={{ value: metricLabelY, angle: -90, position: 'insideLeft' }}
               />
               <Tooltip content={<CustomTooltip />} />
@@ -256,12 +257,14 @@ export function SubmissionCharts({
                 type="number" 
                 dataKey="valueX" 
                 name={metricLabelX}
+                domain={['dataMin - dataMin * 0.1', 'dataMax + dataMax * 0.1']}
                 label={{ value: metricLabelX, position: 'insideBottom', offset: -10 }}
               />
               <YAxis 
                 type="number" 
                 dataKey="valueY" 
                 name={metricLabelY}
+                domain={['dataMin - dataMin * 0.1', 'dataMax + dataMax * 0.1']}
                 label={{ value: metricLabelY, angle: -90, position: 'insideLeft' }}
               />
               <Tooltip content={<CustomTooltip />} />
@@ -285,12 +288,14 @@ export function SubmissionCharts({
                 type="number" 
                 dataKey="valueX" 
                 name={metricLabelX}
+                domain={['dataMin - dataMin * 0.1', 'dataMax + dataMax * 0.1']}
                 label={{ value: metricLabelX, position: 'insideBottom', offset: -10 }}
               />
               <YAxis 
                 type="number" 
                 dataKey="valueY" 
                 name={metricLabelY}
+                domain={['dataMin - dataMin * 0.1', 'dataMax + dataMax * 0.1']}
                 label={{ value: metricLabelY, angle: -90, position: 'insideLeft' }}
               />
               <Tooltip content={<CustomTooltip />} />

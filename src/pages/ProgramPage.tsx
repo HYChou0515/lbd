@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import {
   Title,
@@ -35,6 +35,8 @@ import { ProgramContent } from '../components/program/ProgramContent';
 import { ProgramMetaInfo } from '../components/program/ProgramMetaInfo';
 import type { FileNode } from '../data/mockFileStructure';
 import { mockProgramFileStructure } from '../data/mockProgramFileStructure';
+import { mockExecutionResults, mockCases, mockSubmissions, mockAlgoCode } from '../data/mockProgramData';
+import { formatAbsoluteTime } from '../utils/timeUtils';
 
 export type ProgramNodeType = 
   | 'program'
@@ -142,11 +144,188 @@ export function ProgramPage({ program }: ProgramPageProps) {
   const navigate = useNavigate();
   const [selectedNode, setSelectedNode] = useState<ProgramNode | null>(null);
   const [selectedFile, setSelectedFile] = useState<FileNode | null>(null);
+  const [selectedSubmissionId, setSelectedSubmissionId] = useState<string | null>(null);
+
+  // Generate submissions list for left panel when in submissions view
+  const recentSubmissionsStructure = useMemo<FileNode>(() => {
+    // Get user's submissions sorted by time (newest first)
+    const CURRENT_USER = 'user1';
+    const userSubmissions = mockSubmissions
+      .filter(s => s.data.submitter === CURRENT_USER)
+      .sort((a, b) => new Date(b.data.submission_time).getTime() - new Date(a.data.submission_time).getTime())
+      .slice(0, 10); // 最多顯示 10 筆
+
+    const children: FileNode[] = userSubmissions.map(submission => {
+      const algo = mockAlgoCode.find(a => a.meta.resourceId === submission.data.algo_id);
+      const algoName = algo?.data.name || 'Unknown';
+      const submissionTime = formatAbsoluteTime(submission.data.submission_time);
+      
+      // Get execution results for this submission
+      const execResults = mockExecutionResults.filter(
+        r => r.submission_id === submission.meta.resourceId
+      );
+
+      // Build case folders with logs and artifacts
+      const caseChildren: FileNode[] = [];
+      execResults.forEach(execResult => {
+        const caseInfo = mockCases.find(c => c.meta.resourceId === execResult.case_id);
+        if (!caseInfo) return;
+
+        const caseFolderChildren: FileNode[] = [];
+
+        // Add logs file
+        if (execResult.log_url) {
+          caseFolderChildren.push({
+            name: 'logs',
+            type: 'file',
+            content: `# Execution Logs for ${caseInfo.data.name}
+
+**Status:** ${execResult.status}
+**Wall Time:** ${execResult.wall_time}s
+**CPU Time:** ${execResult.cpu_time}s
+**Memory:** ${execResult.memory} MB
+
+## Log File
+URL: ${execResult.log_url}
+
+Click the link above to view the full execution logs.
+`,
+          });
+        }
+
+        // Add artifacts folder if exists
+        if (execResult.artifact_url) {
+          caseFolderChildren.push({
+            name: 'artifacts',
+            type: 'folder',
+            children: [
+              {
+                name: 'result.zip',
+                type: 'file',
+                content: `# Artifact for ${caseInfo.data.name}
+
+**Download URL:** ${execResult.artifact_url}
+
+This archive contains the execution output and results.
+`,
+              },
+            ],
+          });
+        }
+
+        // Add case folder
+        caseChildren.push({
+          name: caseInfo.data.name,
+          type: 'folder',
+          children: caseFolderChildren,
+        });
+      });
+
+      return {
+        name: `${algoName} (${submissionTime})`,
+        type: 'folder',
+        children: caseChildren,
+      };
+    });
+
+    return {
+      name: 'Recent Submissions',
+      type: 'folder',
+      children,
+    };
+  }, []);
+
+  // Generate file structure for selected submission
+  const submissionFileStructure = useMemo<FileNode | null>(() => {
+    if (!selectedSubmissionId) return null;
+
+    // Get the submission info
+    const submission = mockSubmissions.find(s => s.meta.resourceId === selectedSubmissionId);
+    if (!submission) return null;
+
+    // Get algo info
+    const algo = mockAlgoCode.find(a => a.meta.resourceId === submission.data.algo_id);
+    const algoName = algo?.data.name || 'Unknown';
+    const submissionTime = formatAbsoluteTime(submission.data.submission_time);
+
+    // Get execution results for this submission
+    const execResults = mockExecutionResults.filter(
+      r => r.submission_id === selectedSubmissionId
+    );
+
+    if (execResults.length === 0) return null;
+
+    // Build file structure
+    const children: FileNode[] = [];
+
+    execResults.forEach(execResult => {
+      const caseInfo = mockCases.find(c => c.meta.resourceId === execResult.case_id);
+      if (!caseInfo) return;
+
+      // Create case folder
+      const caseChildren: FileNode[] = [];
+
+      // Add logs file
+      if (execResult.log_url) {
+        caseChildren.push({
+          name: 'logs',
+          type: 'file',
+          content: `# Execution Logs for ${caseInfo.data.name}
+
+**Status:** ${execResult.status}
+**Wall Time:** ${execResult.wall_time}s
+**CPU Time:** ${execResult.cpu_time}s
+**Memory:** ${execResult.memory} MB
+
+## Log File
+URL: ${execResult.log_url}
+
+Click the link above to view the full execution logs.
+`,
+        });
+      }
+
+      // Add artifacts folder if exists
+      if (execResult.artifact_url) {
+        caseChildren.push({
+          name: 'artifacts',
+          type: 'folder',
+          children: [
+            {
+              name: 'result.zip',
+              type: 'file',
+              content: `# Artifact for ${caseInfo.data.name}
+
+**Artifact URL:** ${execResult.artifact_url}
+
+This file contains the output artifacts from the execution.
+
+Click the link above to download the artifact.
+`,
+            }
+          ],
+        });
+      }
+
+      children.push({
+        name: caseInfo.data.name,
+        type: 'folder',
+        children: caseChildren,
+      });
+    });
+
+    return {
+      name: `${algoName} (${submissionTime})`,
+      type: 'folder',
+      children,
+    };
+  }, [selectedSubmissionId]);
 
   const onBack = () => {
     navigate({ to: '/programs' });
   };
 
+  // Dynamic breadcrumb based on selected node
   const breadcrumbItems = [
     <Anchor key="home" href="/" onClick={(e) => { e.preventDefault(); navigate({ to: '/' }); }}>
       Home
@@ -156,6 +335,44 @@ export function ProgramPage({ program }: ProgramPageProps) {
     </Anchor>,
     <Text key="current">{program.data.name}</Text>,
   ];
+
+  // Add additional breadcrumb items based on selected node
+  if (selectedNode?.type === 'submissions') {
+    breadcrumbItems.push(
+      <Anchor 
+        key="submissions" 
+        href="#"
+        onClick={(e) => { 
+          e.preventDefault(); 
+          setSelectedSubmissionId(null); // 清除選中的 submission
+          setSelectedFile(null); // 清除選中的文件
+        }}
+      >
+        Submissions
+      </Anchor>
+    );
+    
+    // Add selected submission info
+    if (selectedSubmissionId) {
+      const submission = mockSubmissions.find(s => s.meta.resourceId === selectedSubmissionId);
+      if (submission) {
+        const algo = mockAlgoCode.find(a => a.meta.resourceId === submission.data.algo_id);
+        const algoName = algo?.data.name || 'Unknown';
+        const submissionTime = formatAbsoluteTime(submission.data.submission_time);
+        breadcrumbItems.push(
+          <Text key="submission-detail">{algoName} ({submissionTime})</Text>
+        );
+      }
+    }
+  } else if (selectedNode?.type === 'case') {
+    breadcrumbItems.push(
+      <Text key="case">{selectedNode.label}</Text>
+    );
+  } else if (selectedNode?.type === 'code') {
+    breadcrumbItems.push(
+      <Text key="code">{selectedNode.label}</Text>
+    );
+  }
 
   return (
     <DetailPageLayout
@@ -219,12 +436,24 @@ export function ProgramPage({ program }: ProgramPageProps) {
 
           <Divider my="xl" />
 
-          {/* File Structure */}
+          {/* File Structure - show submission files if a submission is selected */}
           <Box>
-            <Title order={5} mb="md">File Structure</Title>
+            <Title order={5} mb="md">
+              {selectedSubmissionId 
+                ? 'Submission Files' 
+                : selectedNode?.type === 'submissions'
+                  ? 'Recent Submissions'
+                  : 'Program Files'}
+            </Title>
             <Card withBorder>
               <FileTreeNode
-                node={mockProgramFileStructure}
+                node={
+                  selectedSubmissionId && submissionFileStructure 
+                    ? submissionFileStructure 
+                    : selectedNode?.type === 'submissions'
+                      ? recentSubmissionsStructure
+                      : mockProgramFileStructure
+                }
                 level={0}
                 onSelectFile={setSelectedFile}
                 selectedFile={selectedFile?.name || null}
@@ -237,6 +466,8 @@ export function ProgramPage({ program }: ProgramPageProps) {
         <ProgramContent
           program={program}
           selectedNode={selectedNode}
+          onSubmissionSelect={setSelectedSubmissionId}
+          selectedFile={selectedFile}
         />
       }
       rightPanel={
