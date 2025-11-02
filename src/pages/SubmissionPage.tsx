@@ -3,7 +3,7 @@ import {
   Stack,
   Group,
   Title,
-  Select,
+  MultiSelect,
   Text,
   Badge,
   Box,
@@ -35,26 +35,51 @@ type SubmissionRow = {
 
 export function SubmissionPage() {
   // Filters
-  const [selectedCase, setSelectedCase] = useState<string | null>(null);
-  const [selectedEval, setSelectedEval] = useState<string | null>(null);
+  const [selectedCases, setSelectedCases] = useState<string[]>([]);
+  const [selectedEvals, setSelectedEvals] = useState<string[]>([]);
 
-  // Prepare filter options
+  // Prepare filter options (without 'all' option for MultiSelect)
+  // Group cases by type
+  const openDataCases = mockProgram.cases.filter(c => c.case_type === 'open data');
+  const openExamCases = mockProgram.cases.filter(c => c.case_type === 'open exam');
+  const closeExamCases = mockProgram.cases.filter(c => c.case_type === 'close exam');
+  
   const caseOptions = [
-    { value: 'all', label: 'All Cases' },
-    ...mockProgram.cases.map(c => ({ value: c.id, label: c.name })),
+    { 
+      group: 'Open Data', 
+      items: openDataCases.map(c => ({ value: c.id, label: c.name })) 
+    },
+    { 
+      group: 'Open Exam', 
+      items: openExamCases.map(c => ({ value: c.id, label: c.name })) 
+    },
+    { 
+      group: 'Close Exam', 
+      items: closeExamCases.map(c => ({ value: c.id, label: c.name })) 
+    },
   ];
   
-  const evalOptions = [
-    { value: 'all', label: 'All Metrics' },
-    ...mockProgram.eval_code.map(e => ({ value: e.id, label: e.name })),
-    { value: '__wall_time__', label: 'Wall Time' },
-    { value: '__cpu_time__', label: 'CPU Time' },
-    { value: '__memory__', label: 'Memory' },
+  const columnOptions = [
+    { group: 'Score Evaluations', items: mockProgram.eval_code.map(e => ({ value: e.id, label: e.name })) },
+    { 
+      group: 'Execution Metrics', 
+      items: [
+        { value: '__wall_time__', label: 'Wall Time' },
+        { value: '__cpu_time__', label: 'CPU Time' },
+        { value: '__memory__', label: 'Memory' },
+      ]
+    },
+    { 
+      group: 'Other', 
+      items: [
+        { value: '__actions__', label: 'Actions' },
+      ]
+    },
   ];
 
   // Get filtered cases and metrics
-  const filteredCases = selectedCase && selectedCase !== 'all' 
-    ? mockProgram.cases.filter(c => c.id === selectedCase)
+  const filteredCases = selectedCases.length > 0
+    ? mockProgram.cases.filter(c => selectedCases.includes(c.id))
     : mockProgram.cases;
     
   const allMetrics = [
@@ -64,9 +89,12 @@ export function SubmissionPage() {
     { id: '__memory__', name: 'Memory', type: 'execution' as const },
   ];
     
-  const filteredMetrics = !selectedEval || selectedEval === 'all'
-    ? allMetrics
-    : allMetrics.filter(m => m.id === selectedEval);
+  const filteredMetrics = selectedEvals.length > 0
+    ? allMetrics.filter(m => selectedEvals.includes(m.id))
+    : allMetrics;
+  
+  // Check if actions column should be displayed
+  const showActions = selectedEvals.length === 0 || selectedEvals.includes('__actions__');
 
   // Format metric value
   const formatMetric = (value: number | undefined, metricType: string): string => {
@@ -197,62 +225,64 @@ export function SubmissionPage() {
         });
       });
 
-      // Add actions column
-      caseColumns.push({
-        id: `${caseItem.id}_actions`,
-        header: 'Actions',
-        size: 150,
-        enableSorting: false,
-        Header: () => (
-          <Text size="xs" fw={500}>
-            Actions
-          </Text>
-        ),
-        Cell: ({ row }) => {
-          const execResult = row.original[`${caseItem.id}_execResult`] as ExecutionResult | undefined;
-          
-          if (!execResult) {
-            return <Text size="sm" c="dimmed">-</Text>;
-          }
+      // Add actions column if needed
+      if (showActions) {
+        caseColumns.push({
+          id: `${caseItem.id}_actions`,
+          header: 'Actions',
+          size: 150,
+          enableSorting: false,
+          Header: () => (
+            <Text size="xs" fw={500}>
+              Actions
+            </Text>
+          ),
+          Cell: ({ row }) => {
+            const execResult = row.original[`${caseItem.id}_execResult`] as ExecutionResult | undefined;
+            
+            if (!execResult) {
+              return <Text size="sm" c="dimmed">-</Text>;
+            }
 
-          return (
-            <Group gap="xs" wrap="nowrap">
-              <Badge 
-                size="xs" 
-                color={execResult.status === 'success' ? 'green' : 'red'}
-              >
-                {execResult.status}
-              </Badge>
-              {execResult.log_url && (
-                <Tooltip label="View Log">
-                  <ActionIcon
-                    component="a"
-                    href={execResult.log_url}
-                    target="_blank"
-                    size="sm"
-                    variant="light"
-                  >
-                    <IconFileText size={14} />
-                  </ActionIcon>
-                </Tooltip>
-              )}
-              {execResult.artifact_url && (
-                <Tooltip label="View Artifact">
-                  <ActionIcon
-                    component="a"
-                    href={execResult.artifact_url}
-                    target="_blank"
-                    size="sm"
-                    variant="light"
-                  >
-                    <IconExternalLink size={14} />
-                  </ActionIcon>
-                </Tooltip>
-              )}
-            </Group>
-          );
-        },
-      });
+            return (
+              <Group gap="xs" wrap="nowrap">
+                <Badge 
+                  size="xs" 
+                  color={execResult.status === 'success' ? 'green' : 'red'}
+                >
+                  {execResult.status}
+                </Badge>
+                {execResult.log_url && (
+                  <Tooltip label="View Log">
+                    <ActionIcon
+                      component="a"
+                      href={execResult.log_url}
+                      target="_blank"
+                      size="sm"
+                      variant="light"
+                    >
+                      <IconFileText size={14} />
+                    </ActionIcon>
+                  </Tooltip>
+                )}
+                {execResult.artifact_url && (
+                  <Tooltip label="View Artifact">
+                    <ActionIcon
+                      component="a"
+                      href={execResult.artifact_url}
+                      target="_blank"
+                      size="sm"
+                      variant="light"
+                    >
+                      <IconExternalLink size={14} />
+                    </ActionIcon>
+                  </Tooltip>
+                )}
+              </Group>
+            );
+          },
+        });
+      }
       
       // Add case group column
       cols.push({
@@ -268,7 +298,7 @@ export function SubmissionPage() {
     });
 
     return cols;
-  }, [filteredCases, filteredMetrics]);
+  }, [filteredCases, filteredMetrics, showActions]);
 
   return (
     <Stack gap="lg" p="lg">
@@ -279,26 +309,28 @@ export function SubmissionPage() {
 
       {/* Filters */}
       <Group gap="md">
-        <Select
-          label="Case"
-          placeholder="Select case"
+        <MultiSelect
+          label="Cases"
+          placeholder="Select cases"
           data={caseOptions}
-          value={selectedCase}
-          onChange={setSelectedCase}
+          value={selectedCases}
+          onChange={setSelectedCases}
           style={{ flex: 1 }}
           clearable
-          description="Filter by specific case"
+          searchable
+          description="Filter by specific cases (empty = all)"
         />
         
-        <Select
-          label="Metric"
-          placeholder="Select metric"
-          data={evalOptions}
-          value={selectedEval}
-          onChange={setSelectedEval}
+        <MultiSelect
+          label="Columns"
+          placeholder="Select columns to display"
+          data={columnOptions}
+          value={selectedEvals}
+          onChange={setSelectedEvals}
           style={{ flex: 1 }}
           clearable
-          description="Choose score evaluations or execution metrics"
+          searchable
+          description="Choose which columns to display (empty = all)"
         />
       </Group>
 
@@ -314,6 +346,7 @@ export function SubmissionPage() {
         enableBottomToolbar={false}
         enableTopToolbar={false}
         enableColumnActions={false}
+        enableColumnPinning
         mantineTableProps={{
           highlightOnHover: true,
           withColumnBorders: true,
@@ -327,6 +360,9 @@ export function SubmissionPage() {
         }}
         initialState={{
           density: 'xs',
+          columnPinning: {
+            left: ['submission.algo.name', 'submission.submitter', 'submission.submission_time'],
+          },
         }}
       />
     </Stack>

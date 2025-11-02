@@ -1,5 +1,6 @@
 import { Badge } from '@mantine/core';
-import type { DatasetDataMeta } from '../types/dataset';
+import type { Resource } from '../types/meta';
+import type { Dataset } from '../types/dataset';
 
 /**
  * Dataset Type 對應的顏色
@@ -48,7 +49,7 @@ export function DatasetTypeBadge({ type, variant = 'light', size = 'sm' }: Datas
 /**
  * 下載 Dataset 的共用函數
  */
-export function downloadDataset(dataset: DatasetDataMeta): void {
+export function downloadDataset(dataset: Resource<Dataset>): void {
   // TODO: 實作實際的下載邏輯
   // 這裡可以根據需求實作：
   // 1. 呼叫後端 API 取得下載連結

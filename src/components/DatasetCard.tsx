@@ -1,11 +1,12 @@
 import { Card, Badge, Group, Text, Button, Stack, Tooltip, Box } from '@mantine/core';
 import { IconEye, IconDownload, IconFolder, IconUser, IconClock } from '@tabler/icons-react';
-import type { DatasetDataMeta } from '../types/dataset';
+import type { Resource } from '../types/meta';
 import { DatasetTypeBadge, downloadDataset } from '../utils/datasetUtils';
 import { TimeDisplay } from './TimeDisplay';
+import type { Dataset } from '../types/dataset';
 
 interface DatasetCardProps {
-  datasetMeta: DatasetDataMeta;
+  datasetMeta: Resource<Dataset>;
   onViewDetails: (id: string) => void;
 }
 

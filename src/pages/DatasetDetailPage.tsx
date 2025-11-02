@@ -32,14 +32,15 @@ import { useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import Editor from '@monaco-editor/react';
 import MarkdownPreview from '@uiw/react-markdown-preview';
-import type { DatasetDataMeta } from '../types/dataset';
+import type { Resource } from '../types/meta';
 import { getSubdatasets } from '../utils/datasetHelpers';
 import { formatFullAbsoluteTime } from '../utils/timeUtils';
 import { TimeDisplay } from '../components/TimeDisplay';
 import '../styles/markdown-preview.css';
+import type { Dataset } from '../types/dataset';
 
 interface DatasetDetailPageProps {
-  datasetMeta: DatasetDataMeta;
+  datasetMeta: Resource<Dataset>;
 }
 
 // Dataset Type 對應的顏色
@@ -58,9 +59,9 @@ const datasetTypeColors: Record<string, string> = {
 
 // 遞迴樹節點組件
 interface TreeNodeProps {
-  dataset: DatasetDataMeta;
+  dataset: Resource<Dataset>;
   level: number;
-  onSelect: (dataset: DatasetDataMeta) => void;
+  onSelect: (dataset: Resource<Dataset>) => void;
   selectedId: string | null;
 }
 
@@ -510,9 +511,9 @@ function FileStructurePreview({ onSelectFile, selectedFile }: { onSelectFile: (n
 export function DatasetDetailPage({ datasetMeta }: DatasetDetailPageProps) {
   const navigate = useNavigate();
   const { data } = datasetMeta;
-  const [selectedDataset, setSelectedDataset] = useState<DatasetDataMeta>(datasetMeta);
+  const [selectedDataset, setSelectedDataset] = useState<Resource<Dataset>>(datasetMeta);
   const [selectedFile, setSelectedFile] = useState<FileNode | null>(null);
-  const [breadcrumbPath, setBreadcrumbPath] = useState<DatasetDataMeta[]>([datasetMeta]);
+  const [breadcrumbPath, setBreadcrumbPath] = useState<Resource<Dataset>[]>([datasetMeta]);
   const [isMarkdownPreview, setIsMarkdownPreview] = useState(false); // 新增預覽模式狀態
   
   // isGroup 應該基於當前選擇的 dataset，而不是頁面初始的 datasetMeta
@@ -522,7 +523,7 @@ export function DatasetDetailPage({ datasetMeta }: DatasetDetailPageProps) {
     navigate({ to: '/' });
   };
 
-  const handleSelectDataset = (dataset: DatasetDataMeta) => {
+  const handleSelectDataset = (dataset: Resource<Dataset>) => {
     setSelectedDataset(dataset);
     setSelectedFile(null); // 切換 dataset 時清除檔案選擇
     

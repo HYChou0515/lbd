@@ -1,5 +1,6 @@
-import type { DatasetDataMeta } from '../types/dataset';
+import type { Resource } from '../types/meta';
 import { mockDatasets } from '../data/mockData';
+import type { Dataset } from '../types/dataset';
 
 // 模擬當前登入使用者
 export const CURRENT_USER = 'john.doe';
@@ -19,7 +20,7 @@ export interface DatasetApiParams {
 
 // API 回應
 export interface DatasetApiResponse {
-  data: DatasetDataMeta[];
+  data: Resource<Dataset>[];
   total: number;
   page: number;
   pageSize: number;
@@ -101,9 +102,9 @@ export interface FrontendFilters {
 }
 
 export function applyFrontendFilters(
-  datasets: DatasetDataMeta[],
+  datasets: Resource<Dataset>[],
   filters: FrontendFilters
-): DatasetDataMeta[] {
+): Resource<Dataset>[] {
   let filtered = [...datasets];
 
   // Filter: Mine (creator == current user)

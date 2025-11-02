@@ -1,6 +1,7 @@
-import type { DatasetDataMeta } from '../types/dataset';
+import type { Dataset } from '../types/dataset';
+import type { Resource } from '../types/meta';
 
-export const mockDatasets: DatasetDataMeta[] = [
+export const mockDatasets: Resource<Dataset>[] = [
   // 葉子節點 - 沒有 subdataset
   {
     meta: {

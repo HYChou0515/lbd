@@ -6,62 +6,44 @@
  * Case 類型
  */
 export type CaseType = 'open data' | 'open exam' | 'close exam';
-
+export type CodeType = "sample" | "evaluation" | "algo";
 /**
  * Case 資料結構
  */
 export interface Case {
-  id: string;
   dataset_revision_id: string;
   case_type: CaseType;
   name: string;
   description: string;
-  creator: string;
-  createdTime: string;
-  updater: string;
-  updatedTime: string;
 }
 
 /**
  * Code 資料結構
  */
 export interface Code {
-  id: string;
   name: string;
   description: string;
   gitlab_url: string;
   commit_hash: string;
-  creator: string;
-  createdTime: string;
-  updater: string;
-  updatedTime: string;
+  code_type: CodeType;
 }
 
 /**
  * Program 資料結構（比賽項目）
  */
 export interface Program {
-  id: string;
   name: string;
   description: string;
-  cases: Case[];
-  sample_code: Code[];
-  eval_code: Code[];
-  creator: string;
-  createdTime: string;
-  updater: string;
-  updatedTime: string;
+  case_ids: string[];
+  code_ids: string[];
 }
 
 /**
  * Submission 資料結構
  */
 export interface Submission {
-  id: string;
   program_id: string;
-  algo: Code;
-  submitter: string;
-  submission_time: string;
+  algo_id: string;
   status: 'pending' | 'running' | 'completed' | 'failed';
 }
 
@@ -72,11 +54,11 @@ export interface Submission {
 export interface ExecutionResult {
   submission_id: string;
   case_id: string;
+  case_type: CaseType;
   wall_time: number; // 執行耗時（秒）
   cpu_time: number;
   memory: number; // MB
   status: 'success' | 'failed' | 'timeout';
-  executed_at: string;
   log_url?: string;
   artifact_url?: string;
 }
@@ -93,6 +75,7 @@ export interface EvaluationResult {
   evaluated_at: string;
 }
 
+//這邊之後應概要搬去component
 /**
  * Metric 類型（用於選擇顯示的指標）
  */

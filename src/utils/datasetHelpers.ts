@@ -1,41 +1,42 @@
 import { mockDatasets } from '../data/mockData';
-import type { DatasetDataMeta } from '../types/dataset';
+import type { Dataset } from '../types/dataset';
+import type { Resource } from '../types/meta';
 
 /**
  * 根據 revision ID 查找對應的 dataset
  */
-export function findDatasetByRevisionId(revisionId: string): DatasetDataMeta | undefined {
+export function findDatasetByRevisionId(revisionId: string): Resource<Dataset> | undefined {
   return mockDatasets.find((dataset) => dataset.meta.revisionId === revisionId);
 }
 
 /**
  * 根據 resource ID 查找對應的 dataset
  */
-export function findDatasetByResourceId(resourceId: string): DatasetDataMeta | undefined {
+export function findDatasetByResourceId(resourceId: string): Resource<Dataset> | undefined {
   return mockDatasets.find((dataset) => dataset.meta.resourceId === resourceId);
 }
 
 /**
  * 獲取 dataset 的所有 subdatasets
  */
-export function getSubdatasets(dataset: DatasetDataMeta): DatasetDataMeta[] {
+export function getSubdatasets(dataset: Resource<Dataset>): Resource<Dataset>[] {
   return dataset.data.sub_dataset_revision_ids
     .map((revId) => findDatasetByRevisionId(revId))
-    .filter((ds): ds is DatasetDataMeta => ds !== undefined);
+    .filter((ds): ds is Resource<Dataset> => ds !== undefined);
 }
 
 /**
  * 檢查 dataset 是否有 subdatasets
  */
-export function hasSubdatasets(dataset: DatasetDataMeta): boolean {
+export function hasSubdatasets(dataset: Resource<Dataset>): boolean {
   return dataset.data.sub_dataset_revision_ids.length > 0;
 }
 
 /**
  * 獲取 dataset 的所有祖先（父、祖父...）
  */
-export function getAncestors(dataset: DatasetDataMeta): DatasetDataMeta[] {
-  const ancestors: DatasetDataMeta[] = [];
+export function getAncestors(dataset: Resource<Dataset>): Resource<Dataset>[] {
+  const ancestors: Resource<Dataset>[] = [];
   
   for (const potentialParent of mockDatasets) {
     if (potentialParent.data.sub_dataset_revision_ids.includes(dataset.meta.revisionId)) {
@@ -51,7 +52,7 @@ export function getAncestors(dataset: DatasetDataMeta): DatasetDataMeta[] {
 /**
  * 獲取所有頂層 datasets（沒有父節點的）
  */
-export function getTopLevelDatasets(): DatasetDataMeta[] {
+export function getTopLevelDatasets(): Resource<Dataset>[] {
   const childRevisionIds = new Set<string>();
   
   mockDatasets.forEach((dataset) => {

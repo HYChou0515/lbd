@@ -11,15 +11,6 @@ export type DatasetType =
   | 'RSEM Result'
   | 'Group'
 
-
-export interface ResourceMeta {
-  creator: string;
-  createdTime: string;
-  updater: string;
-  updatedTime: string;
-  resourceId: string;
-  revisionId: string;
-}
 export interface BaseInfo {
   name: string;
   description: string;
@@ -89,10 +80,6 @@ export type Dataset = (
   | RSEMResult
     | GroupDataset
 )
-export type DatasetDataMeta = {
-    meta: ResourceMeta;
-    data: Dataset;
-}
 
 export type MimicUnzippedShit = {
     filePath: string;

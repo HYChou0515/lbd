@@ -49,9 +49,10 @@ import {
   type FrontendFilters,
   type DatasetApiResponse,
 } from '../api/datasetApi';
-import type { DatasetDataMeta } from '../types/dataset';
+import type { Resource } from '../types/meta';
 import { useUserPreferences } from '../hooks/useUserPreferences';
 import { useSettingsModal } from '../hooks/useSettingsModal';
+import type { Dataset } from '../types/dataset';
 
 export function HomePage() {
   const navigate = useNavigate();
@@ -95,7 +96,7 @@ export function HomePage() {
   const typeOptions = getAllTypes();
 
   // 定義表格欄位
-  const columns = useMemo<MRT_ColumnDef<DatasetDataMeta>[]>(
+  const columns = useMemo<MRT_ColumnDef<Resource<Dataset>>[]>(
     () => [
       {
         id: 'actions',
