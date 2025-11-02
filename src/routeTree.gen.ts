@@ -27,6 +27,9 @@ import { Route as ProgramsProgramIdSubmissionsSubmissionIdRouteImport } from './
 import { Route as ProgramsProgramIdSampleCodeCodeIdRouteImport } from './routes/programs/$programId/sample-code/$codeId'
 import { Route as ProgramsProgramIdOpenExamCaseIdRouteImport } from './routes/programs/$programId/open-exam/$caseId'
 import { Route as ProgramsProgramIdOpenDataCaseIdRouteImport } from './routes/programs/$programId/open-data/$caseId'
+import { Route as ProgramsProgramIdLeaderboardOpenExamRouteImport } from './routes/programs/$programId/leaderboard/open-exam'
+import { Route as ProgramsProgramIdLeaderboardOpenDataRouteImport } from './routes/programs/$programId/leaderboard/open-data'
+import { Route as ProgramsProgramIdLeaderboardCloseExamRouteImport } from './routes/programs/$programId/leaderboard/close-exam'
 import { Route as ProgramsProgramIdEvalCodeCodeIdRouteImport } from './routes/programs/$programId/eval-code/$codeId'
 import { Route as ProgramsProgramIdCloseExamCaseIdRouteImport } from './routes/programs/$programId/close-exam/$caseId'
 
@@ -131,6 +134,24 @@ const ProgramsProgramIdOpenDataCaseIdRoute =
     path: '/$caseId',
     getParentRoute: () => ProgramsProgramIdOpenDataRoute,
   } as any)
+const ProgramsProgramIdLeaderboardOpenExamRoute =
+  ProgramsProgramIdLeaderboardOpenExamRouteImport.update({
+    id: '/open-exam',
+    path: '/open-exam',
+    getParentRoute: () => ProgramsProgramIdLeaderboardRoute,
+  } as any)
+const ProgramsProgramIdLeaderboardOpenDataRoute =
+  ProgramsProgramIdLeaderboardOpenDataRouteImport.update({
+    id: '/open-data',
+    path: '/open-data',
+    getParentRoute: () => ProgramsProgramIdLeaderboardRoute,
+  } as any)
+const ProgramsProgramIdLeaderboardCloseExamRoute =
+  ProgramsProgramIdLeaderboardCloseExamRouteImport.update({
+    id: '/close-exam',
+    path: '/close-exam',
+    getParentRoute: () => ProgramsProgramIdLeaderboardRoute,
+  } as any)
 const ProgramsProgramIdEvalCodeCodeIdRoute =
   ProgramsProgramIdEvalCodeCodeIdRouteImport.update({
     id: '/$codeId',
@@ -153,7 +174,7 @@ export interface FileRoutesByFullPath {
   '/submissions': typeof SubmissionsIndexRoute
   '/programs/$programId/close-exam': typeof ProgramsProgramIdCloseExamRouteWithChildren
   '/programs/$programId/eval-code': typeof ProgramsProgramIdEvalCodeRouteWithChildren
-  '/programs/$programId/leaderboard': typeof ProgramsProgramIdLeaderboardRoute
+  '/programs/$programId/leaderboard': typeof ProgramsProgramIdLeaderboardRouteWithChildren
   '/programs/$programId/open-data': typeof ProgramsProgramIdOpenDataRouteWithChildren
   '/programs/$programId/open-exam': typeof ProgramsProgramIdOpenExamRouteWithChildren
   '/programs/$programId/sample-code': typeof ProgramsProgramIdSampleCodeRouteWithChildren
@@ -161,6 +182,9 @@ export interface FileRoutesByFullPath {
   '/programs/$programId/': typeof ProgramsProgramIdIndexRoute
   '/programs/$programId/close-exam/$caseId': typeof ProgramsProgramIdCloseExamCaseIdRoute
   '/programs/$programId/eval-code/$codeId': typeof ProgramsProgramIdEvalCodeCodeIdRoute
+  '/programs/$programId/leaderboard/close-exam': typeof ProgramsProgramIdLeaderboardCloseExamRoute
+  '/programs/$programId/leaderboard/open-data': typeof ProgramsProgramIdLeaderboardOpenDataRoute
+  '/programs/$programId/leaderboard/open-exam': typeof ProgramsProgramIdLeaderboardOpenExamRoute
   '/programs/$programId/open-data/$caseId': typeof ProgramsProgramIdOpenDataCaseIdRoute
   '/programs/$programId/open-exam/$caseId': typeof ProgramsProgramIdOpenExamCaseIdRoute
   '/programs/$programId/sample-code/$codeId': typeof ProgramsProgramIdSampleCodeCodeIdRoute
@@ -174,7 +198,7 @@ export interface FileRoutesByTo {
   '/submissions': typeof SubmissionsIndexRoute
   '/programs/$programId/close-exam': typeof ProgramsProgramIdCloseExamRouteWithChildren
   '/programs/$programId/eval-code': typeof ProgramsProgramIdEvalCodeRouteWithChildren
-  '/programs/$programId/leaderboard': typeof ProgramsProgramIdLeaderboardRoute
+  '/programs/$programId/leaderboard': typeof ProgramsProgramIdLeaderboardRouteWithChildren
   '/programs/$programId/open-data': typeof ProgramsProgramIdOpenDataRouteWithChildren
   '/programs/$programId/open-exam': typeof ProgramsProgramIdOpenExamRouteWithChildren
   '/programs/$programId/sample-code': typeof ProgramsProgramIdSampleCodeRouteWithChildren
@@ -182,6 +206,9 @@ export interface FileRoutesByTo {
   '/programs/$programId': typeof ProgramsProgramIdIndexRoute
   '/programs/$programId/close-exam/$caseId': typeof ProgramsProgramIdCloseExamCaseIdRoute
   '/programs/$programId/eval-code/$codeId': typeof ProgramsProgramIdEvalCodeCodeIdRoute
+  '/programs/$programId/leaderboard/close-exam': typeof ProgramsProgramIdLeaderboardCloseExamRoute
+  '/programs/$programId/leaderboard/open-data': typeof ProgramsProgramIdLeaderboardOpenDataRoute
+  '/programs/$programId/leaderboard/open-exam': typeof ProgramsProgramIdLeaderboardOpenExamRoute
   '/programs/$programId/open-data/$caseId': typeof ProgramsProgramIdOpenDataCaseIdRoute
   '/programs/$programId/open-exam/$caseId': typeof ProgramsProgramIdOpenExamCaseIdRoute
   '/programs/$programId/sample-code/$codeId': typeof ProgramsProgramIdSampleCodeCodeIdRoute
@@ -197,7 +224,7 @@ export interface FileRoutesById {
   '/submissions/': typeof SubmissionsIndexRoute
   '/programs/$programId/close-exam': typeof ProgramsProgramIdCloseExamRouteWithChildren
   '/programs/$programId/eval-code': typeof ProgramsProgramIdEvalCodeRouteWithChildren
-  '/programs/$programId/leaderboard': typeof ProgramsProgramIdLeaderboardRoute
+  '/programs/$programId/leaderboard': typeof ProgramsProgramIdLeaderboardRouteWithChildren
   '/programs/$programId/open-data': typeof ProgramsProgramIdOpenDataRouteWithChildren
   '/programs/$programId/open-exam': typeof ProgramsProgramIdOpenExamRouteWithChildren
   '/programs/$programId/sample-code': typeof ProgramsProgramIdSampleCodeRouteWithChildren
@@ -205,6 +232,9 @@ export interface FileRoutesById {
   '/programs/$programId/': typeof ProgramsProgramIdIndexRoute
   '/programs/$programId/close-exam/$caseId': typeof ProgramsProgramIdCloseExamCaseIdRoute
   '/programs/$programId/eval-code/$codeId': typeof ProgramsProgramIdEvalCodeCodeIdRoute
+  '/programs/$programId/leaderboard/close-exam': typeof ProgramsProgramIdLeaderboardCloseExamRoute
+  '/programs/$programId/leaderboard/open-data': typeof ProgramsProgramIdLeaderboardOpenDataRoute
+  '/programs/$programId/leaderboard/open-exam': typeof ProgramsProgramIdLeaderboardOpenExamRoute
   '/programs/$programId/open-data/$caseId': typeof ProgramsProgramIdOpenDataCaseIdRoute
   '/programs/$programId/open-exam/$caseId': typeof ProgramsProgramIdOpenExamCaseIdRoute
   '/programs/$programId/sample-code/$codeId': typeof ProgramsProgramIdSampleCodeCodeIdRoute
@@ -229,6 +259,9 @@ export interface FileRouteTypes {
     | '/programs/$programId/'
     | '/programs/$programId/close-exam/$caseId'
     | '/programs/$programId/eval-code/$codeId'
+    | '/programs/$programId/leaderboard/close-exam'
+    | '/programs/$programId/leaderboard/open-data'
+    | '/programs/$programId/leaderboard/open-exam'
     | '/programs/$programId/open-data/$caseId'
     | '/programs/$programId/open-exam/$caseId'
     | '/programs/$programId/sample-code/$codeId'
@@ -250,6 +283,9 @@ export interface FileRouteTypes {
     | '/programs/$programId'
     | '/programs/$programId/close-exam/$caseId'
     | '/programs/$programId/eval-code/$codeId'
+    | '/programs/$programId/leaderboard/close-exam'
+    | '/programs/$programId/leaderboard/open-data'
+    | '/programs/$programId/leaderboard/open-exam'
     | '/programs/$programId/open-data/$caseId'
     | '/programs/$programId/open-exam/$caseId'
     | '/programs/$programId/sample-code/$codeId'
@@ -272,6 +308,9 @@ export interface FileRouteTypes {
     | '/programs/$programId/'
     | '/programs/$programId/close-exam/$caseId'
     | '/programs/$programId/eval-code/$codeId'
+    | '/programs/$programId/leaderboard/close-exam'
+    | '/programs/$programId/leaderboard/open-data'
+    | '/programs/$programId/leaderboard/open-exam'
     | '/programs/$programId/open-data/$caseId'
     | '/programs/$programId/open-exam/$caseId'
     | '/programs/$programId/sample-code/$codeId'
@@ -415,6 +454,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProgramsProgramIdOpenDataCaseIdRouteImport
       parentRoute: typeof ProgramsProgramIdOpenDataRoute
     }
+    '/programs/$programId/leaderboard/open-exam': {
+      id: '/programs/$programId/leaderboard/open-exam'
+      path: '/open-exam'
+      fullPath: '/programs/$programId/leaderboard/open-exam'
+      preLoaderRoute: typeof ProgramsProgramIdLeaderboardOpenExamRouteImport
+      parentRoute: typeof ProgramsProgramIdLeaderboardRoute
+    }
+    '/programs/$programId/leaderboard/open-data': {
+      id: '/programs/$programId/leaderboard/open-data'
+      path: '/open-data'
+      fullPath: '/programs/$programId/leaderboard/open-data'
+      preLoaderRoute: typeof ProgramsProgramIdLeaderboardOpenDataRouteImport
+      parentRoute: typeof ProgramsProgramIdLeaderboardRoute
+    }
+    '/programs/$programId/leaderboard/close-exam': {
+      id: '/programs/$programId/leaderboard/close-exam'
+      path: '/close-exam'
+      fullPath: '/programs/$programId/leaderboard/close-exam'
+      preLoaderRoute: typeof ProgramsProgramIdLeaderboardCloseExamRouteImport
+      parentRoute: typeof ProgramsProgramIdLeaderboardRoute
+    }
     '/programs/$programId/eval-code/$codeId': {
       id: '/programs/$programId/eval-code/$codeId'
       path: '/$codeId'
@@ -459,6 +519,27 @@ const ProgramsProgramIdEvalCodeRouteChildren: ProgramsProgramIdEvalCodeRouteChil
 const ProgramsProgramIdEvalCodeRouteWithChildren =
   ProgramsProgramIdEvalCodeRoute._addFileChildren(
     ProgramsProgramIdEvalCodeRouteChildren,
+  )
+
+interface ProgramsProgramIdLeaderboardRouteChildren {
+  ProgramsProgramIdLeaderboardCloseExamRoute: typeof ProgramsProgramIdLeaderboardCloseExamRoute
+  ProgramsProgramIdLeaderboardOpenDataRoute: typeof ProgramsProgramIdLeaderboardOpenDataRoute
+  ProgramsProgramIdLeaderboardOpenExamRoute: typeof ProgramsProgramIdLeaderboardOpenExamRoute
+}
+
+const ProgramsProgramIdLeaderboardRouteChildren: ProgramsProgramIdLeaderboardRouteChildren =
+  {
+    ProgramsProgramIdLeaderboardCloseExamRoute:
+      ProgramsProgramIdLeaderboardCloseExamRoute,
+    ProgramsProgramIdLeaderboardOpenDataRoute:
+      ProgramsProgramIdLeaderboardOpenDataRoute,
+    ProgramsProgramIdLeaderboardOpenExamRoute:
+      ProgramsProgramIdLeaderboardOpenExamRoute,
+  }
+
+const ProgramsProgramIdLeaderboardRouteWithChildren =
+  ProgramsProgramIdLeaderboardRoute._addFileChildren(
+    ProgramsProgramIdLeaderboardRouteChildren,
   )
 
 interface ProgramsProgramIdOpenDataRouteChildren {
@@ -522,7 +603,7 @@ const ProgramsProgramIdSubmissionsRouteWithChildren =
 interface ProgramsProgramIdRouteChildren {
   ProgramsProgramIdCloseExamRoute: typeof ProgramsProgramIdCloseExamRouteWithChildren
   ProgramsProgramIdEvalCodeRoute: typeof ProgramsProgramIdEvalCodeRouteWithChildren
-  ProgramsProgramIdLeaderboardRoute: typeof ProgramsProgramIdLeaderboardRoute
+  ProgramsProgramIdLeaderboardRoute: typeof ProgramsProgramIdLeaderboardRouteWithChildren
   ProgramsProgramIdOpenDataRoute: typeof ProgramsProgramIdOpenDataRouteWithChildren
   ProgramsProgramIdOpenExamRoute: typeof ProgramsProgramIdOpenExamRouteWithChildren
   ProgramsProgramIdSampleCodeRoute: typeof ProgramsProgramIdSampleCodeRouteWithChildren
@@ -533,7 +614,8 @@ interface ProgramsProgramIdRouteChildren {
 const ProgramsProgramIdRouteChildren: ProgramsProgramIdRouteChildren = {
   ProgramsProgramIdCloseExamRoute: ProgramsProgramIdCloseExamRouteWithChildren,
   ProgramsProgramIdEvalCodeRoute: ProgramsProgramIdEvalCodeRouteWithChildren,
-  ProgramsProgramIdLeaderboardRoute: ProgramsProgramIdLeaderboardRoute,
+  ProgramsProgramIdLeaderboardRoute:
+    ProgramsProgramIdLeaderboardRouteWithChildren,
   ProgramsProgramIdOpenDataRoute: ProgramsProgramIdOpenDataRouteWithChildren,
   ProgramsProgramIdOpenExamRoute: ProgramsProgramIdOpenExamRouteWithChildren,
   ProgramsProgramIdSampleCodeRoute:

@@ -3,6 +3,7 @@ import type { ProgramNode } from '../../pages/ProgramPage';
 import type { Resource } from '../../types/meta';
 import type { Program } from '../../types/program';
 import { SubmissionSection } from '../submission/SubmissionSection';
+import { LeaderboardSection } from '../leaderboard/LeaderboardSection';
 import { ContentViewer } from '../ContentViewer';
 import { generateCaseMarkdown } from '../../utils/contentGenerators';
 import type { FileNode } from '../../data/mockFileStructure';
@@ -538,13 +539,26 @@ Total Cases: ${submissionExecResults.length}
         );
 
       case 'leaderboard':
+      case 'leaderboard-od':
+      case 'leaderboard-oe':
+      case 'leaderboard-ce':
+        let caseType: 'open data' | 'open exam' | 'close exam' | undefined;
+        if (selectedNode.type === 'leaderboard-od') {
+          caseType = 'open data';
+        } else if (selectedNode.type === 'leaderboard-oe') {
+          caseType = 'open exam';
+        } else if (selectedNode.type === 'leaderboard-ce') {
+          caseType = 'close exam';
+        }
+        
         return (
-          <Stack align="center" justify="center" h="100%" p="xl">
-            <Title order={3} c="dimmed">Leaderboard</Title>
-            <Text c="dimmed" size="sm">
-              Coming soon...
-            </Text>
-          </Stack>
+          <LeaderboardSection 
+            programId={program.meta.resourceId}
+            caseType={caseType}
+            onViewDetail={(submissionId) => {
+              onSubmissionSelect?.(submissionId);
+            }}
+          />
         );
 
       default:

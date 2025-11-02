@@ -52,6 +52,9 @@ export type ProgramNodeType =
   | 'submissions'
   | 'submission'
   | 'leaderboard'
+  | 'leaderboard-od'
+  | 'leaderboard-oe'
+  | 'leaderboard-ce'
   | 'pagination';
 
 export type ProgramNode = {
@@ -246,6 +249,34 @@ export function ProgramPage({ program }: ProgramPageProps) {
         });
       }
       setSelectedSubmissionId(null);
+    } else if (pathname.includes('/leaderboard')) {
+      // Check leaderboard routes BEFORE other routes to avoid conflicts
+      if (pathname.includes('/leaderboard/open-data')) {
+        setSelectedNode({
+          id: 'leaderboard-od',
+          type: 'leaderboard-od',
+          label: 'Open Data',
+        });
+      } else if (pathname.includes('/leaderboard/open-exam')) {
+        setSelectedNode({
+          id: 'leaderboard-oe',
+          type: 'leaderboard-oe',
+          label: 'Open Exam',
+        });
+      } else if (pathname.includes('/leaderboard/close-exam')) {
+        setSelectedNode({
+          id: 'leaderboard-ce',
+          type: 'leaderboard-ce',
+          label: 'Close Exam',
+        });
+      } else {
+        setSelectedNode({
+          id: 'leaderboard',
+          type: 'leaderboard',
+          label: 'Leaderboard',
+        });
+      }
+      setSelectedSubmissionId(null);
     } else if (pathname.includes('/close-exam')) {
       const closeExamIndex = pathParts.indexOf('close-exam');
       if (closeExamIndex !== -1 && pathParts[closeExamIndex + 1]) {
@@ -308,13 +339,6 @@ export function ProgramPage({ program }: ProgramPageProps) {
           label: 'Eval Code',
         });
       }
-      setSelectedSubmissionId(null);
-    } else if (pathname.includes('/leaderboard')) {
-      setSelectedNode({
-        id: 'leaderboard',
-        type: 'leaderboard',
-        label: 'Leaderboard',
-      });
       setSelectedSubmissionId(null);
     }
   }, [location.pathname]);
@@ -972,10 +996,13 @@ Click the link above to download the artifact.
         </Group>
       );
     }
-  } else if (selectedNode?.type === 'leaderboard') {
-    // Leaderboard breadcrumb
+  } else if (selectedNode?.type === 'leaderboard' || 
+             selectedNode?.type === 'leaderboard-od' || 
+             selectedNode?.type === 'leaderboard-oe' || 
+             selectedNode?.type === 'leaderboard-ce') {
+    // Leaderboard breadcrumb - parent level
     breadcrumbItems.push(
-      <Group key="leaderboard-group" gap={4}>
+      <Group key="leaderboard-parent-group" gap={4}>
         <Anchor 
           href={`/programs/${program.meta.resourceId}/leaderboard`}
           onClick={(e) => { 
@@ -988,6 +1015,49 @@ Click the link above to download the artifact.
         {createSiblingMenu()}
       </Group>
     );
+
+    // If it's a child node (OD/OE/CE), add child breadcrumb
+    if (selectedNode.type === 'leaderboard-od' || 
+        selectedNode.type === 'leaderboard-oe' || 
+        selectedNode.type === 'leaderboard-ce') {
+      const leaderboardChildren = [
+        { type: 'leaderboard-od', label: 'Open Data', path: '/programs/$programId/leaderboard/open-data' },
+        { type: 'leaderboard-oe', label: 'Open Exam', path: '/programs/$programId/leaderboard/open-exam' },
+        { type: 'leaderboard-ce', label: 'Close Exam', path: '/programs/$programId/leaderboard/close-exam' },
+      ];
+
+      const currentChild = leaderboardChildren.find(c => c.type === selectedNode.type);
+
+      breadcrumbItems.push(
+        <Group key="leaderboard-child-group" gap={4}>
+          <Text size="sm" fw={500}>
+            {currentChild?.label}
+          </Text>
+          <Menu>
+            <Menu.Target>
+              <ActionIcon variant="subtle" size="sm">
+                <IconDots size={14} />
+              </ActionIcon>
+            </Menu.Target>
+            <Menu.Dropdown style={{ maxHeight: '400px', overflowY: 'auto' }}>
+              {leaderboardChildren.map((child) => (
+                <Menu.Item
+                  key={child.type}
+                  component="a"
+                  href={child.path.replace('$programId', program.meta.resourceId)}
+                  onClick={(e: React.MouseEvent) => {
+                    e.preventDefault();
+                    window.location.href = child.path.replace('$programId', program.meta.resourceId);
+                  }}
+                >
+                  {child.label}
+                </Menu.Item>
+              ))}
+            </Menu.Dropdown>
+          </Menu>
+        </Group>
+      );
+    }
   }
 
   return (

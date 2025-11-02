@@ -331,11 +331,6 @@ export function SubmissionSection({ onViewDetail, programId }: SubmissionSection
       cols.push({
         id: caseItem.meta.resourceId,
         header: caseItem.data.name,
-        Header: () => (
-          <Badge size="lg" variant="light">
-            {caseItem.data.name}
-          </Badge>
-        ),
         columns: caseColumns,
       });
     });
@@ -420,15 +415,15 @@ export function SubmissionSection({ onViewDetail, programId }: SubmissionSection
                 
                 <MultiSelect
                   size="xs"
-                  label="Columns"
-                  placeholder="Select columns to display"
+                  label="Metrics"
+                  placeholder="Select metrics to display"
                   data={columnOptions}
                   value={selectedEvals}
                   onChange={setSelectedEvals}
                   style={{ flex: 1 }}
                   clearable
                   searchable
-                  description="Choose which columns to display (empty = all)"
+                  description="Choose which metrics to display (empty = all)"
                 />
               </Group>
             </Box>
@@ -438,17 +433,23 @@ export function SubmissionSection({ onViewDetail, programId }: SubmissionSection
               <MantineReactTable
                 columns={columns}
                 data={tableData}
-                enableSorting
+                enableSorting={false}
                 enableColumnResizing
                 enableColumnFilters={false}
-                enableGlobalFilter={false}
+                enableGlobalFilter
+                enableFilters={false}
                 enablePagination={false}
                 enableBottomToolbar={false}
-                enableTopToolbar={false}
+                enableTopToolbar
                 enableColumnActions={false}
                 enableStickyHeader
                 enableColumnPinning
                 enableRowVirtualization
+                enableDensityToggle={false}
+                enableFullScreenToggle={false}
+                enableHiding={false}
+                enableColumnOrdering={false}
+                positionGlobalFilter="left"
                 mantineTableContainerProps={{
                   style: {
                     maxHeight: '60vh',
@@ -456,8 +457,6 @@ export function SubmissionSection({ onViewDetail, programId }: SubmissionSection
                 }}
                 mantineTableProps={{
                   highlightOnHover: true,
-                  withColumnBorders: true,
-                  withTableBorder: true,
                 }}
                 mantineTableHeadCellProps={{
                   style: {
@@ -470,6 +469,7 @@ export function SubmissionSection({ onViewDetail, programId }: SubmissionSection
                   columnPinning: {
                     left: ['submission.data.algo_id', 'submission.data.submission_time', 'view_detail'],
                   },
+                  showGlobalFilter: true,
                 }}
               />
             </Box>

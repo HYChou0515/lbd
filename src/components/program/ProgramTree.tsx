@@ -157,6 +157,10 @@ function TreeNode({ node, level, selectedNode, onNodeSelect, programId, submissi
         return <IconFileText {...iconProps} />;
       case 'leaderboard':
         return <IconTrophy {...iconProps} />;
+      case 'leaderboard-od':
+      case 'leaderboard-oe':
+      case 'leaderboard-ce':
+        return <IconTrophy {...iconProps} />;
       default:
         return expanded ? <IconFolderOpen {...iconProps} /> : <IconFolder {...iconProps} />;
     }
@@ -206,6 +210,15 @@ function TreeNode({ node, level, selectedNode, onNodeSelect, programId, submissi
           }
           else if (node.type === 'leaderboard') {
             navigate({ to: '/programs/$programId/leaderboard', params: { programId } });
+          }
+          else if (node.type === 'leaderboard-od') {
+            navigate({ to: '/programs/$programId/leaderboard/open-data', params: { programId } });
+          }
+          else if (node.type === 'leaderboard-oe') {
+            navigate({ to: '/programs/$programId/leaderboard/open-exam', params: { programId } });
+          }
+          else if (node.type === 'leaderboard-ce') {
+            navigate({ to: '/programs/$programId/leaderboard/close-exam', params: { programId } });
           }
           else if (node.type === 'case') {
             // Determine which route based on parent type
@@ -428,6 +441,23 @@ export function ProgramTree({ program, selectedNode, onNodeSelect, programId, su
           id: 'leaderboard',
           type: 'leaderboard',
           label: 'Leaderboard',
+          children: [
+            {
+              id: 'leaderboard-od',
+              type: 'leaderboard-od',
+              label: 'Open Data',
+            },
+            {
+              id: 'leaderboard-oe',
+              type: 'leaderboard-oe',
+              label: 'Open Exam',
+            },
+            {
+              id: 'leaderboard-ce',
+              type: 'leaderboard-ce',
+              label: 'Close Exam',
+            },
+          ],
         },
       ],
     };
