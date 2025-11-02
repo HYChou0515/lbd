@@ -397,6 +397,17 @@ export function SubmissionPage() {
         enableTopToolbar={false}
         enableColumnActions={false}
         enableColumnPinning
+        enableStickyHeader
+        enableRowVirtualization
+        mantineTableContainerProps={{
+          style: {
+            maxHeight: 'calc(100vh - 280px)',
+          },
+        }}
+        rowVirtualizerOptions={{
+            overscan: 25, //adjust the number or rows that are rendered above and below the visible area of the table
+            estimateSize: () => 100, //if your rows are taller than normal, try tweaking this value to make scrollbar size more accurate
+        }}
         mantineTableProps={{
           highlightOnHover: true,
           withColumnBorders: true,
