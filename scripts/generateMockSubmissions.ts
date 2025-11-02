@@ -52,17 +52,6 @@ type EvaluationResult = {
   evaluated_at: string;
 };
 
-// Configuration
-const CONFIG = {
-  numUsers: 10,
-  submissionsPerUser: 5,
-  // Use actual case IDs from mockProgramData
-  caseIds: ['case-od1', 'case-od2', 'case-oe1', 'case-oe2', 'case-ce1', 'case-ce2', 'case-ce3'],
-  // Use actual eval code IDs from mockProgramData
-  evalCodeIds: ['eval-code-1', 'eval-code-2', 'eval-code-3', 'eval-code-4'],
-  programId: 'program-001',
-};
-
 // Helper functions
 function randomDate(start: Date, end: Date): string {
   const date = new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime()));
@@ -223,19 +212,21 @@ function generateEvaluationResults(
 
   submissions.forEach((submission, subIdx) => {
     // Each submission has a base quality that improves over time
-    const submissionQuality = 0.5 + (subIdx / submissions.length) * 0.3;
+    const submissionQuality = 0.5 + (subIdx / submissions.length) * 0.25;
     
     caseIds.forEach(caseId => {
-      evalCodeIds.forEach(evalCodeId => {
-        // Different eval codes might have different scores
-        const evalVariance = Math.random() * 0.1;
-        const score = randomScore(submissionQuality, 0.15) + evalVariance;
+      evalCodeIds.forEach((evalCodeId, evalIdx) => {
+        // Different eval codes might have different base scores
+        const evalBase = 0.6 + (evalIdx * 0.1);
+        // Combine submission quality with eval-specific variance
+        const baseScore = (submissionQuality + evalBase) / 2;
+        const score = randomScore(baseScore, 0.2); // Increased variance
         
         results.push({
           submission_id: submission.meta.resourceId,
           case_id: caseId,
           eval_code_id: evalCodeId,
-          score: Math.min(1.0, Math.max(0.0, score)),
+          score: score,
           evaluated_at: randomDate(
             new Date(submission.data.submission_time),
             new Date('2025-11-02')
@@ -316,55 +307,4 @@ function formatAsTypeScript(
 
   return lines.join('\n');
 }
-
-// Main execution
-function main() {
-  console.log('Generating mock data...');
-  console.log(`Config: ${CONFIG.numUsers} users, ${CONFIG.submissionsPerUser} submissions each`);
-  console.log('');
-
-  const users = generateUsers(CONFIG.numUsers);
-  const algoCodes = generateAlgoCodes(users, CONFIG.submissionsPerUser);
-  const caseIds = CONFIG.caseIds;
-  const evalCodeIds = CONFIG.evalCodeIds;
-  
-  const submissions = generateSubmissions(
-    users,
-    algoCodes,
-    CONFIG.submissionsPerUser,
-    CONFIG.programId
-  );
-  
-  const executionResults = generateExecutionResults(submissions, caseIds);
-  const evaluationResults = generateEvaluationResults(submissions, caseIds, evalCodeIds);
-
-  console.log('Generated:');
-  console.log(`  - ${users.length} users`);
-  console.log(`  - ${algoCodes.length} algorithm codes`);
-  console.log(`  - ${submissions.length} submissions`);
-  console.log(`  - ${executionResults.length} execution results`);
-  console.log(`  - ${evaluationResults.length} evaluation results`);
-  console.log('');
-
-  // Output TypeScript code
-  const tsCode = formatAsTypeScript(algoCodes, submissions, executionResults, evaluationResults);
-  console.log('='.repeat(80));
-  console.log('TypeScript Code (copy to mockProgramData.ts):');
-  console.log('='.repeat(80));
-  console.log(tsCode);
-  console.log('='.repeat(80));
-
-  // Also output JSON for inspection
-  console.log('');
-  console.log('JSON Data (for inspection):');
-  console.log(JSON.stringify({ users, algoCodes: algoCodes.slice(0, 2), submissions: submissions.slice(0, 3) }, null, 2));
-}
-
-// Run if called directly
-// Check if this is the main module in ES module context
-const isMain = import.meta.url === `file://${process.argv[1]}`;
-if (isMain) {
-  main();
-}
-
 export { generateUsers, generateAlgoCodes, generateSubmissions, generateExecutionResults, generateEvaluationResults };

@@ -7,18 +7,27 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
-import { generateUsers, generateAlgoCodes, generateSubmissions } from './generateMockSubmissions';
+import { 
+  generateUsers, 
+  generateAlgoCodes, 
+  generateSubmissions,
+  generateExecutionResults,
+  generateEvaluationResults 
+} from './generateMockSubmissions';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const MOCK_DATA_FILE = path.join(__dirname, '../src/data/mockProgramData.ts');
 
-// Configuration matching the original
+// Configuration
 const CONFIG = {
   numUsers: 10,
   submissionsPerUser: 50,
-  caseIds: ['case-od1', 'case-od2', 'case-oe1', 'case-oe2', 'case-ce1', 'case-ce2', 'case-ce3'],
-  evalCodeIds: ['eval-code-1', 'eval-code-2', 'eval-code-3', 'eval-code-4'],
+  // Use actual case IDs from mockProgramData
+  caseIds: ['case-od1', 'case-od2'],
+//   caseIds: ['case-od1', 'case-od2', 'case-oe1', 'case-oe2', 'case-ce1', 'case-ce2', 'case-ce3'],
+  // Use actual eval code IDs from mockProgramData
+  evalCodeIds: ['eval-code-1', 'eval-code-2'],
   programId: 'program-001',
 };
 
@@ -30,8 +39,13 @@ function main() {
   const users = generateUsers(CONFIG.numUsers);
   const algoCodes = generateAlgoCodes(users, CONFIG.submissionsPerUser);
   const submissions = generateSubmissions(users, algoCodes, CONFIG.submissionsPerUser, CONFIG.programId);
+  const executionResults = generateExecutionResults(submissions, CONFIG.caseIds);
+  const evaluationResults = generateEvaluationResults(submissions, CONFIG.caseIds, CONFIG.evalCodeIds);
   
-  console.log(`Generated ${algoCodes.length} algo codes and ${submissions.length} submissions`);
+  console.log(`Generated ${algoCodes.length} algo codes`);
+  console.log(`Generated ${submissions.length} submissions`);
+  console.log(`Generated ${executionResults.length} execution results`);
+  console.log(`Generated ${evaluationResults.length} evaluation results`);
   
   // Find the sections to replace
   const algoCodeStart = originalContent.indexOf('export const mockAlgoCode: CodeResource[] = [');
@@ -40,7 +54,13 @@ function main() {
   const submissionsStart = originalContent.indexOf('export const mockSubmissions: SubmissionResource[] = [');
   const submissionsEnd = originalContent.indexOf('];', submissionsStart) + 2;
   
-  if (algoCodeStart === -1 || submissionsStart === -1) {
+  const executionStart = originalContent.indexOf('export const mockExecutionResults: ExecutionResult[] = [');
+  const executionEnd = originalContent.indexOf('];', executionStart) + 2;
+  
+  const evaluationStart = originalContent.indexOf('export const mockEvaluationResults: EvaluationResult[] = [');
+  const evaluationEnd = originalContent.indexOf('];', evaluationStart) + 2;
+  
+  if (algoCodeStart === -1 || submissionsStart === -1 || executionStart === -1 || evaluationStart === -1) {
     console.error('Could not find sections to replace!');
     process.exit(1);
   }
@@ -48,13 +68,21 @@ function main() {
   // Generate new sections
   const algoCodeSection = generateAlgoCodeSection(algoCodes);
   const submissionsSection = generateSubmissionsSection(submissions);
+  const executionSection = generateExecutionSection(executionResults);
+  const evaluationSection = generateEvaluationSection(evaluationResults);
   
   // Build new content
   const beforeAlgoCode = originalContent.substring(0, algoCodeStart);
-  const betweenSections = originalContent.substring(algoCodeEnd, submissionsStart);
-  const afterSubmissions = originalContent.substring(submissionsEnd);
+  const betweenAlgoAndSubmissions = originalContent.substring(algoCodeEnd, submissionsStart);
+  const betweenSubmissionsAndExecution = originalContent.substring(submissionsEnd, executionStart);
+  const betweenExecutionAndEvaluation = originalContent.substring(executionEnd, evaluationStart);
+  const afterEvaluation = originalContent.substring(evaluationEnd);
   
-  const newContent = beforeAlgoCode + algoCodeSection + betweenSections + submissionsSection + afterSubmissions;
+  const newContent = beforeAlgoCode + algoCodeSection + 
+                     betweenAlgoAndSubmissions + submissionsSection + 
+                     betweenSubmissionsAndExecution + executionSection +
+                     betweenExecutionAndEvaluation + evaluationSection +
+                     afterEvaluation;
   
   console.log('Writing updated file...');
   fs.writeFileSync(MOCK_DATA_FILE, newContent, 'utf-8');
@@ -62,6 +90,8 @@ function main() {
   console.log('✅ Successfully updated mockProgramData.ts');
   console.log(`   - ${algoCodes.length} algorithm codes`);
   console.log(`   - ${submissions.length} submissions`);
+  console.log(`   - ${executionResults.length} execution results`);
+  console.log(`   - ${evaluationResults.length} evaluation results`);
 }
 
 function generateAlgoCodeSection(algoCodes: any[]): string {
@@ -116,6 +146,47 @@ function generateSubmissionsSection(submissions: any[]): string {
     lines.push(`      status: '${sub.data.status}',`);
     lines.push('    },');
     lines.push(idx < submissions.length - 1 ? '  },' : '  }');
+  });
+  
+  lines.push('];');
+  lines.push('');
+  
+  return lines.join('\n');
+}
+
+function generateExecutionSection(executionResults: any[]): string {
+  const lines: string[] = [];
+  lines.push('export const mockExecutionResults: ExecutionResult[] = [');
+  
+  executionResults.forEach((exec, idx) => {
+    lines.push('  {');
+    lines.push(`    submission_id: '${exec.submission_id}',`);
+    lines.push(`    case_id: '${exec.case_id}',`);
+    lines.push(`    status: '${exec.status}',`);
+    lines.push(`    wall_time: ${exec.wall_time},`);
+    lines.push(`    cpu_time: ${exec.cpu_time},`);
+    lines.push(`    memory: ${exec.memory},`);
+    lines.push(`    exit_code: ${exec.exit_code},`);
+    lines.push(idx < executionResults.length - 1 ? '  },' : '  }');
+  });
+  
+  lines.push('];');
+  lines.push('');
+  
+  return lines.join('\n');
+}
+
+function generateEvaluationSection(evaluationResults: any[]): string {
+  const lines: string[] = [];
+  lines.push('export const mockEvaluationResults: EvaluationResult[] = [');
+  
+  evaluationResults.forEach((evalResult, idx) => {
+    lines.push('  {');
+    lines.push(`    submission_id: '${evalResult.submission_id}',`);
+    lines.push(`    case_id: '${evalResult.case_id}',`);
+    lines.push(`    eval_code_id: '${evalResult.eval_code_id}',`);
+    lines.push(`    score: ${evalResult.score},`);
+    lines.push(idx < evaluationResults.length - 1 ? '  },' : '  }');
   });
   
   lines.push('];');
