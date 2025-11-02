@@ -20,16 +20,21 @@ import {
   mockSubmissions, 
   mockEvaluationResults,
   mockExecutionResults,
+  mockCases,
+  mockEvalCode,
+  mockAlgoCode,
 } from '../data/mockProgramData';
 import type { 
   ExecutionResult,
+  EvaluationResult,
   Submission,
 } from '../types/program';
+import type { Resource } from '../types/meta';
 import { TimeDisplay } from '../components/TimeDisplay';
 
 // Table row type
 type SubmissionRow = {
-  submission: Submission;
+  submission: Resource<Submission>;
   [key: string]: any; // Dynamic fields for case metrics
 };
 
@@ -40,27 +45,27 @@ export function SubmissionPage() {
 
   // Prepare filter options (without 'all' option for MultiSelect)
   // Group cases by type
-  const openDataCases = mockProgram.cases.filter(c => c.case_type === 'open data');
-  const openExamCases = mockProgram.cases.filter(c => c.case_type === 'open exam');
-  const closeExamCases = mockProgram.cases.filter(c => c.case_type === 'close exam');
+  const openDataCases = mockCases.filter(c => c.data.case_type === 'open data');
+  const openExamCases = mockCases.filter(c => c.data.case_type === 'open exam');
+  const closeExamCases = mockCases.filter(c => c.data.case_type === 'close exam');
   
   const caseOptions = [
     { 
       group: 'Open Data', 
-      items: openDataCases.map(c => ({ value: c.id, label: c.name })) 
+      items: openDataCases.map(c => ({ value: c.meta.resourceId, label: c.data.name })) 
     },
     { 
       group: 'Open Exam', 
-      items: openExamCases.map(c => ({ value: c.id, label: c.name })) 
+      items: openExamCases.map(c => ({ value: c.meta.resourceId, label: c.data.name })) 
     },
     { 
       group: 'Close Exam', 
-      items: closeExamCases.map(c => ({ value: c.id, label: c.name })) 
+      items: closeExamCases.map(c => ({ value: c.meta.resourceId, label: c.data.name })) 
     },
   ];
   
   const columnOptions = [
-    { group: 'Score Evaluations', items: mockProgram.eval_code.map(e => ({ value: e.id, label: e.name })) },
+    { group: 'Score Evaluations', items: mockEvalCode.map(e => ({ value: e.meta.resourceId, label: e.data.name })) },
     { 
       group: 'Execution Metrics', 
       items: [
@@ -79,11 +84,11 @@ export function SubmissionPage() {
 
   // Get filtered cases and metrics
   const filteredCases = selectedCases.length > 0
-    ? mockProgram.cases.filter(c => selectedCases.includes(c.id))
-    : mockProgram.cases;
+    ? mockCases.filter(c => selectedCases.includes(c.meta.resourceId))
+    : mockCases;
     
   const allMetrics = [
-    ...mockProgram.eval_code.map(e => ({ id: e.id, name: e.name, type: 'score' as const })),
+    ...mockEvalCode.map(e => ({ id: e.meta.resourceId, name: e.data.name, type: 'score' as const })),
     { id: '__wall_time__', name: 'Wall Time', type: 'execution' as const },
     { id: '__cpu_time__', name: 'CPU Time', type: 'execution' as const },
     { id: '__memory__', name: 'Memory', type: 'execution' as const },
@@ -118,30 +123,30 @@ export function SubmissionPage() {
       };
 
       // Get evaluation and execution results
-      const evalResults = mockEvaluationResults.filter(r => r.submission_id === submission.id);
-      const execResults = mockExecutionResults.filter(r => r.submission_id === submission.id);
+      const evalResults = mockEvaluationResults.filter((r: EvaluationResult) => r.submission_id === submission.meta.resourceId);
+      const execResults = mockExecutionResults.filter(r => r.submission_id === submission.meta.resourceId);
 
       // Build data for each case
       filteredCases.forEach(caseItem => {
-        const execResult = execResults.find(r => r.case_id === caseItem.id);
+        const execResult = execResults.find(r => r.case_id === caseItem.meta.resourceId);
         
         // Add metrics for this case
         filteredMetrics.forEach(metric => {
-          const key = `${caseItem.id}_${metric.id}`;
+          const key = `${caseItem.meta.resourceId}_${metric.id}`;
           
           if (metric.type === 'execution' && execResult) {
             const metricKey = metric.id.replace(/__/g, '') as keyof ExecutionResult;
             row[key] = execResult[metricKey];
           } else if (metric.type === 'score') {
             const evalResult = evalResults.find(
-              r => r.case_id === caseItem.id && r.eval_code_id === metric.id
+              (r: EvaluationResult) => r.case_id === caseItem.meta.resourceId && r.eval_code_id === metric.id
             );
             row[key] = evalResult?.score;
           }
         });
 
         // Add execution result for actions
-        row[`${caseItem.id}_execResult`] = execResult;
+        row[`${caseItem.meta.resourceId}_execResult`] = execResult;
       });
 
       return row;
@@ -152,45 +157,52 @@ export function SubmissionPage() {
   const columns = useMemo<MRT_ColumnDef<SubmissionRow>[]>(() => {
     const cols: MRT_ColumnDef<SubmissionRow>[] = [
       {
-        accessorKey: 'submission.algo.name',
+        accessorKey: 'submission.data.algo_id',
         header: 'Submission',
         size: 200,
-        Cell: ({ row }) => (
-          <Group gap="xs">
-            <Tooltip label="View on GitLab">
-              <ActionIcon
-                component="a"
-                href={row.original.submission.algo.gitlab_url}
-                target="_blank"
-                size="sm"
-                variant="subtle"
-              >
-                <IconExternalLink size={14} />
-              </ActionIcon>
-            </Tooltip>
-            <Box>
-              <Text size="sm" fw={500}>
-                {row.original.submission.algo.name}
-              </Text>
-              <Text size="xs" c="dimmed">
-                {row.original.submission.algo.commit_hash}
-              </Text>
-            </Box>
-          </Group>
-        ),
+        Cell: ({ row }) => {
+          const algoId = row.original.submission.data.algo_id;
+          const algo = mockAlgoCode.find(c => c.meta.resourceId === algoId);
+          
+          return (
+            <Group gap="xs">
+              {algo && (
+                <Tooltip label="View on GitLab">
+                  <ActionIcon
+                    component="a"
+                    href={algo.data.gitlab_url}
+                    target="_blank"
+                    size="sm"
+                    variant="subtle"
+                  >
+                    <IconExternalLink size={14} />
+                  </ActionIcon>
+                </Tooltip>
+              )}
+              <Box>
+                <Text size="sm" fw={500}>
+                  {algo?.data.name || 'Unknown'}
+                </Text>
+                <Text size="xs" c="dimmed">
+                  {algo?.data.commit_hash || '-'}
+                </Text>
+              </Box>
+            </Group>
+          );
+        },
       },
       {
-        accessorKey: 'submission.submitter',
+        accessorKey: 'submission.data.submitter',
         header: 'Submitter',
         size: 120,
       },
       {
-        accessorKey: 'submission.submission_time',
+        accessorKey: 'submission.data.submission_time',
         header: 'Time',
         size: 150,
         Cell: ({ row }) => (
           <TimeDisplay 
-            time={row.original.submission.submission_time} 
+            time={row.original.submission.data.submission_time} 
             size="sm"
           />
         ),
@@ -203,7 +215,7 @@ export function SubmissionPage() {
       
       // Add metric columns
       filteredMetrics.forEach(metric => {
-        const key = `${caseItem.id}_${metric.id}`;
+        const key = `${caseItem.meta.resourceId}_${metric.id}`;
         caseColumns.push({
           accessorKey: key,
           id: key,
@@ -228,7 +240,7 @@ export function SubmissionPage() {
       // Add actions column if needed
       if (showActions) {
         caseColumns.push({
-          id: `${caseItem.id}_actions`,
+          id: `${caseItem.meta.resourceId}_actions`,
           header: 'Actions',
           size: 150,
           enableSorting: false,
@@ -238,7 +250,7 @@ export function SubmissionPage() {
             </Text>
           ),
           Cell: ({ row }) => {
-            const execResult = row.original[`${caseItem.id}_execResult`] as ExecutionResult | undefined;
+            const execResult = row.original[`${caseItem.meta.resourceId}_execResult`] as ExecutionResult | undefined;
             
             if (!execResult) {
               return <Text size="sm" c="dimmed">-</Text>;
@@ -286,11 +298,11 @@ export function SubmissionPage() {
       
       // Add case group column
       cols.push({
-        id: caseItem.id,
-        header: caseItem.name,
+        id: caseItem.meta.resourceId,
+        header: caseItem.data.name,
         Header: () => (
           <Badge size="lg" variant="light">
-            {caseItem.name}
+            {caseItem.data.name}
           </Badge>
         ),
         columns: caseColumns,
@@ -304,7 +316,7 @@ export function SubmissionPage() {
     <Stack gap="lg" p="lg">
       {/* Header */}
       <Group justify="space-between">
-        <Title order={2}>Submissions - {mockProgram.name}</Title>
+        <Title order={2}>Submissions - {mockProgram.data.name}</Title>
       </Group>
 
       {/* Filters */}

@@ -44,6 +44,8 @@ export interface Program {
 export interface Submission {
   program_id: string;
   algo_id: string;
+  submitter: string;
+  submission_time: string;
   status: 'pending' | 'running' | 'completed' | 'failed';
 }
 
@@ -54,7 +56,6 @@ export interface Submission {
 export interface ExecutionResult {
   submission_id: string;
   case_id: string;
-  case_type: CaseType;
   wall_time: number; // 執行耗時（秒）
   cpu_time: number;
   memory: number; // MB
