@@ -555,8 +555,59 @@ Click the link above to download the artifact.
     </Anchor>,
   ];
 
+  // Helper function to create sibling navigation menu
+  const createSiblingMenu = () => {
+    return (
+      <Menu position="bottom-start" shadow="md">
+        <Menu.Target>
+          <ActionIcon size="xs" variant="subtle" color="gray">
+            <IconDots size={14} />
+          </ActionIcon>
+        </Menu.Target>
+        <Menu.Dropdown style={{ maxHeight: '400px', overflowY: 'auto' }}>
+          <Menu.Label>Switch Section</Menu.Label>
+          <Menu.Item onClick={() => {
+            navigate({ to: '/programs/$programId/submissions', params: { programId: program.meta.resourceId } });
+          }}>
+            Submissions
+          </Menu.Item>
+          <Menu.Item onClick={() => {
+            navigate({ to: '/programs/$programId/open-data', params: { programId: program.meta.resourceId } });
+          }}>
+            Open Data
+          </Menu.Item>
+          <Menu.Item onClick={() => {
+            navigate({ to: '/programs/$programId/open-exam', params: { programId: program.meta.resourceId } });
+          }}>
+            Open Exam
+          </Menu.Item>
+          <Menu.Item onClick={() => {
+            navigate({ to: '/programs/$programId/close-exam', params: { programId: program.meta.resourceId } });
+          }}>
+            Close Exam
+          </Menu.Item>
+          <Menu.Item onClick={() => {
+            navigate({ to: '/programs/$programId/sample-code', params: { programId: program.meta.resourceId } });
+          }}>
+            Sample Code
+          </Menu.Item>
+          <Menu.Item onClick={() => {
+            navigate({ to: '/programs/$programId/eval-code', params: { programId: program.meta.resourceId } });
+          }}>
+            Eval Code
+          </Menu.Item>
+          <Menu.Item onClick={() => {
+            navigate({ to: '/programs/$programId/leaderboard', params: { programId: program.meta.resourceId } });
+          }}>
+            Leaderboard
+          </Menu.Item>
+        </Menu.Dropdown>
+      </Menu>
+    );
+  };
+
   // Add additional breadcrumb items based on selected node
-  if (selectedNode?.type === 'submissions') {
+  if (selectedNode?.type === 'submissions' || selectedNode?.type === 'submission') {
     // Submissions breadcrumb with dropdown menu
     breadcrumbItems.push(
       <Group key="submissions-group" gap={4}>
@@ -565,70 +616,18 @@ Click the link above to download the artifact.
           onClick={(e) => { 
             e.preventDefault(); 
             navigate({ to: '/programs/$programId/submissions', params: { programId: program.meta.resourceId } });
-            setSelectedSubmissionId(null);
-            setSelectedFile(null);
           }}
         >
           Submissions
         </Anchor>
-        <Menu position="bottom-start" shadow="md">
-          <Menu.Target>
-            <ActionIcon size="xs" variant="subtle" color="gray">
-              <IconDots size={14} />
-            </ActionIcon>
-          </Menu.Target>
-          <Menu.Dropdown>
-            <Menu.Label>Switch Section</Menu.Label>
-            <Menu.Item onClick={() => {
-              setSelectedNode({ id: 'open-data', type: 'open-data', label: 'Open Data' });
-              setSelectedSubmissionId(null);
-              setSelectedFile(null);
-            }}>
-              Open Data
-            </Menu.Item>
-            <Menu.Item onClick={() => {
-              setSelectedNode({ id: 'open-exam', type: 'open-exam', label: 'Open Exam' });
-              setSelectedSubmissionId(null);
-              setSelectedFile(null);
-            }}>
-              Open Exam
-            </Menu.Item>
-            <Menu.Item onClick={() => {
-              setSelectedNode({ id: 'close-exam', type: 'close-exam', label: 'Close Exam' });
-              setSelectedSubmissionId(null);
-              setSelectedFile(null);
-            }}>
-              Close Exam
-            </Menu.Item>
-            <Menu.Item onClick={() => {
-              setSelectedNode({ id: 'sample-code', type: 'sample-code', label: 'Sample Code' });
-              setSelectedSubmissionId(null);
-              setSelectedFile(null);
-            }}>
-              Sample Code
-            </Menu.Item>
-            <Menu.Item onClick={() => {
-              setSelectedNode({ id: 'eval-code', type: 'eval-code', label: 'Eval Code' });
-              setSelectedSubmissionId(null);
-              setSelectedFile(null);
-            }}>
-              Eval Code
-            </Menu.Item>
-            <Menu.Item onClick={() => {
-              setSelectedNode({ id: 'leaderboard', type: 'leaderboard', label: 'Leaderboard' });
-              setSelectedSubmissionId(null);
-              setSelectedFile(null);
-            }}>
-              Leaderboard
-            </Menu.Item>
-          </Menu.Dropdown>
-        </Menu>
+        {createSiblingMenu()}
       </Group>
     );
     
-    // Add selected submission info with dropdown
-    if (selectedSubmissionId) {
-      const submission = mockSubmissions.find(s => s.meta.resourceId === selectedSubmissionId);
+    // Add selected submission info with dropdown (for both submission detail and submissions list with selected item)
+    if (selectedSubmissionId || selectedNode?.type === 'submission') {
+      const submissionId = selectedSubmissionId || selectedNode?.id;
+      const submission = mockSubmissions.find(s => s.meta.resourceId === submissionId);
       if (submission) {
         const algo = mockAlgoCode.find(a => a.meta.resourceId === submission.data.algo_id);
         const algoName = algo?.data.name || 'Unknown';
@@ -649,13 +648,13 @@ Click the link above to download the artifact.
                   <IconDots size={14} />
                 </ActionIcon>
               </Menu.Target>
-              <Menu.Dropdown>
+              <Menu.Dropdown style={{ maxHeight: '400px', overflowY: 'auto' }}>
                 <Menu.Label>Switch Submission</Menu.Label>
                 {userSubmissions.map(sub => {
                   const subAlgo = mockAlgoCode.find(a => a.meta.resourceId === sub.data.algo_id);
                   const subAlgoName = subAlgo?.data.name || 'Unknown';
                   const subTime = formatAbsoluteTime(sub.data.submission_time);
-                  const isActive = sub.meta.resourceId === selectedSubmissionId;
+                  const isActive = sub.meta.resourceId === submissionId;
                   
                   return (
                     <Menu.Item
@@ -668,8 +667,6 @@ Click the link above to download the artifact.
                             submissionId: sub.meta.resourceId 
                           } 
                         });
-                        setSelectedSubmissionId(sub.meta.resourceId);
-                        setSelectedFile(null);
                       }}
                       color={isActive ? 'blue' : undefined}
                       style={{ fontWeight: isActive ? 600 : 400 }}
@@ -684,13 +681,312 @@ Click the link above to download the artifact.
         );
       }
     }
-  } else if (selectedNode?.type === 'case') {
+  } else if (selectedNode?.type === 'open-data' || (selectedNode?.type === 'case' && selectedNode?.metadata?.parentType === 'open-data')) {
+    // Open Data breadcrumb
     breadcrumbItems.push(
-      <Text key="case">{selectedNode.label}</Text>
+      <Group key="open-data-group" gap={4}>
+        <Anchor 
+          href={`/programs/${program.meta.resourceId}/open-data`}
+          onClick={(e) => { 
+            e.preventDefault(); 
+            navigate({ to: '/programs/$programId/open-data', params: { programId: program.meta.resourceId } });
+          }}
+        >
+          Open Data
+        </Anchor>
+        {createSiblingMenu()}
+      </Group>
     );
-  } else if (selectedNode?.type === 'code') {
+    
+    // Add case detail if it's a case type or metadata has case
+    const caseItem = selectedNode?.type === 'case' ? selectedNode.metadata?.case : selectedNode?.metadata?.case;
+    if (caseItem) {
+      const openDataCases = mockCases.filter(c => c.data.case_type === 'open data');
+      
+      breadcrumbItems.push(
+        <Group key="open-data-case-group" gap={4}>
+          <Text>{caseItem.data.name}</Text>
+          <Menu position="bottom-start" shadow="md" width={250}>
+            <Menu.Target>
+              <ActionIcon size="xs" variant="subtle" color="gray">
+                <IconDots size={14} />
+              </ActionIcon>
+            </Menu.Target>
+            <Menu.Dropdown style={{ maxHeight: '400px', overflowY: 'auto' }}>
+              <Menu.Label>Switch Case</Menu.Label>
+              {openDataCases.map(c => {
+                const isActive = c.meta.resourceId === caseItem.meta.resourceId;
+                return (
+                  <Menu.Item
+                    key={c.meta.resourceId}
+                    onClick={() => {
+                      navigate({ 
+                        to: '/programs/$programId/open-data/$caseId', 
+                        params: { 
+                          programId: program.meta.resourceId, 
+                          caseId: c.meta.resourceId 
+                        } 
+                      });
+                    }}
+                    color={isActive ? 'blue' : undefined}
+                    style={{ fontWeight: isActive ? 600 : 400 }}
+                  >
+                    {c.data.name}
+                  </Menu.Item>
+                );
+              })}
+            </Menu.Dropdown>
+          </Menu>
+        </Group>
+      );
+    }
+  } else if (selectedNode?.type === 'open-exam' || (selectedNode?.type === 'case' && selectedNode?.metadata?.parentType === 'open-exam')) {
+    // Open Exam breadcrumb
     breadcrumbItems.push(
-      <Text key="code">{selectedNode.label}</Text>
+      <Group key="open-exam-group" gap={4}>
+        <Anchor 
+          href={`/programs/${program.meta.resourceId}/open-exam`}
+          onClick={(e) => { 
+            e.preventDefault(); 
+            navigate({ to: '/programs/$programId/open-exam', params: { programId: program.meta.resourceId } });
+          }}
+        >
+          Open Exam
+        </Anchor>
+        {createSiblingMenu()}
+      </Group>
+    );
+    
+    // Add case detail if it's a case type or metadata has case
+    const caseItem = selectedNode?.type === 'case' ? selectedNode.metadata?.case : selectedNode?.metadata?.case;
+    if (caseItem) {
+      const openExamCases = mockCases.filter(c => c.data.case_type === 'open exam');
+      
+      breadcrumbItems.push(
+        <Group key="open-exam-case-group" gap={4}>
+          <Text>{caseItem.data.name}</Text>
+          <Menu position="bottom-start" shadow="md" width={250}>
+            <Menu.Target>
+              <ActionIcon size="xs" variant="subtle" color="gray">
+                <IconDots size={14} />
+              </ActionIcon>
+            </Menu.Target>
+            <Menu.Dropdown style={{ maxHeight: '400px', overflowY: 'auto' }}>
+              <Menu.Label>Switch Case</Menu.Label>
+              {openExamCases.map(c => {
+                const isActive = c.meta.resourceId === caseItem.meta.resourceId;
+                return (
+                  <Menu.Item
+                    key={c.meta.resourceId}
+                    onClick={() => {
+                      navigate({ 
+                        to: '/programs/$programId/open-exam/$caseId', 
+                        params: { 
+                          programId: program.meta.resourceId, 
+                          caseId: c.meta.resourceId 
+                        } 
+                      });
+                    }}
+                    color={isActive ? 'blue' : undefined}
+                    style={{ fontWeight: isActive ? 600 : 400 }}
+                  >
+                    {c.data.name}
+                  </Menu.Item>
+                );
+              })}
+            </Menu.Dropdown>
+          </Menu>
+        </Group>
+      );
+    }
+  } else if (selectedNode?.type === 'close-exam' || (selectedNode?.type === 'case' && selectedNode?.metadata?.parentType === 'close-exam')) {
+    // Close Exam breadcrumb
+    breadcrumbItems.push(
+      <Group key="close-exam-group" gap={4}>
+        <Anchor 
+          href={`/programs/${program.meta.resourceId}/close-exam`}
+          onClick={(e) => { 
+            e.preventDefault(); 
+            navigate({ to: '/programs/$programId/close-exam', params: { programId: program.meta.resourceId } });
+          }}
+        >
+          Close Exam
+        </Anchor>
+        {createSiblingMenu()}
+      </Group>
+    );
+    
+    // Add case detail if it's a case type or metadata has case
+    const caseItem = selectedNode?.type === 'case' ? selectedNode.metadata?.case : selectedNode?.metadata?.case;
+    if (caseItem) {
+      const closeExamCases = mockCases.filter(c => c.data.case_type === 'close exam');
+      
+      breadcrumbItems.push(
+        <Group key="close-exam-case-group" gap={4}>
+          <Text>{caseItem.data.name}</Text>
+          <Menu position="bottom-start" shadow="md" width={250}>
+            <Menu.Target>
+              <ActionIcon size="xs" variant="subtle" color="gray">
+                <IconDots size={14} />
+              </ActionIcon>
+            </Menu.Target>
+            <Menu.Dropdown style={{ maxHeight: '400px', overflowY: 'auto' }}>
+              <Menu.Label>Switch Case</Menu.Label>
+              {closeExamCases.map(c => {
+                const isActive = c.meta.resourceId === caseItem.meta.resourceId;
+                return (
+                  <Menu.Item
+                    key={c.meta.resourceId}
+                    onClick={() => {
+                      navigate({ 
+                        to: '/programs/$programId/close-exam/$caseId', 
+                        params: { 
+                          programId: program.meta.resourceId, 
+                          caseId: c.meta.resourceId 
+                        } 
+                      });
+                    }}
+                    color={isActive ? 'blue' : undefined}
+                    style={{ fontWeight: isActive ? 600 : 400 }}
+                  >
+                    {c.data.name}
+                  </Menu.Item>
+                );
+              })}
+            </Menu.Dropdown>
+          </Menu>
+        </Group>
+      );
+    }
+  } else if (selectedNode?.type === 'sample-code' || (selectedNode?.type === 'code' && selectedNode?.metadata?.parentType === 'sample-code')) {
+    // Sample Code breadcrumb
+    breadcrumbItems.push(
+      <Group key="sample-code-group" gap={4}>
+        <Anchor 
+          href={`/programs/${program.meta.resourceId}/sample-code`}
+          onClick={(e) => { 
+            e.preventDefault(); 
+            navigate({ to: '/programs/$programId/sample-code', params: { programId: program.meta.resourceId } });
+          }}
+        >
+          Sample Code
+        </Anchor>
+        {createSiblingMenu()}
+      </Group>
+    );
+    
+    // Add code detail if it's a code type or metadata has code
+    const codeItem = selectedNode?.type === 'code' ? selectedNode.metadata?.code : selectedNode?.metadata?.code;
+    if (codeItem) {
+      breadcrumbItems.push(
+        <Group key="sample-code-detail-group" gap={4}>
+          <Text>{codeItem.data.name}</Text>
+          <Menu position="bottom-start" shadow="md" width={250}>
+            <Menu.Target>
+              <ActionIcon size="xs" variant="subtle" color="gray">
+                <IconDots size={14} />
+              </ActionIcon>
+            </Menu.Target>
+            <Menu.Dropdown style={{ maxHeight: '400px', overflowY: 'auto' }}>
+              <Menu.Label>Switch Sample Code</Menu.Label>
+              {mockSampleCode.map(c => {
+                const isActive = c.meta.resourceId === codeItem.meta.resourceId;
+                return (
+                  <Menu.Item
+                    key={c.meta.resourceId}
+                    onClick={() => {
+                      navigate({ 
+                        to: '/programs/$programId/sample-code/$codeId', 
+                        params: { 
+                          programId: program.meta.resourceId, 
+                          codeId: c.meta.resourceId 
+                        } 
+                      });
+                    }}
+                    color={isActive ? 'blue' : undefined}
+                    style={{ fontWeight: isActive ? 600 : 400 }}
+                  >
+                    {c.data.name}
+                  </Menu.Item>
+                );
+              })}
+            </Menu.Dropdown>
+          </Menu>
+        </Group>
+      );
+    }
+  } else if (selectedNode?.type === 'eval-code' || (selectedNode?.type === 'code' && selectedNode?.metadata?.parentType === 'eval-code')) {
+    // Eval Code breadcrumb
+    breadcrumbItems.push(
+      <Group key="eval-code-group" gap={4}>
+        <Anchor 
+          href={`/programs/${program.meta.resourceId}/eval-code`}
+          onClick={(e) => { 
+            e.preventDefault(); 
+            navigate({ to: '/programs/$programId/eval-code', params: { programId: program.meta.resourceId } });
+          }}
+        >
+          Eval Code
+        </Anchor>
+        {createSiblingMenu()}
+      </Group>
+    );
+    
+    // Add code detail if it's a code type or metadata has code
+    const codeItem = selectedNode?.type === 'code' ? selectedNode.metadata?.code : selectedNode?.metadata?.code;
+    if (codeItem) {
+      breadcrumbItems.push(
+        <Group key="eval-code-detail-group" gap={4}>
+          <Text>{codeItem.data.name}</Text>
+          <Menu position="bottom-start" shadow="md" width={250}>
+            <Menu.Target>
+              <ActionIcon size="xs" variant="subtle" color="gray">
+                <IconDots size={14} />
+              </ActionIcon>
+            </Menu.Target>
+            <Menu.Dropdown style={{ maxHeight: '400px', overflowY: 'auto' }}>
+              <Menu.Label>Switch Eval Code</Menu.Label>
+              {mockEvalCode.map(c => {
+                const isActive = c.meta.resourceId === codeItem.meta.resourceId;
+                return (
+                  <Menu.Item
+                    key={c.meta.resourceId}
+                    onClick={() => {
+                      navigate({ 
+                        to: '/programs/$programId/eval-code/$codeId', 
+                        params: { 
+                          programId: program.meta.resourceId, 
+                          codeId: c.meta.resourceId 
+                        } 
+                      });
+                    }}
+                    color={isActive ? 'blue' : undefined}
+                    style={{ fontWeight: isActive ? 600 : 400 }}
+                  >
+                    {c.data.name}
+                  </Menu.Item>
+                );
+              })}
+            </Menu.Dropdown>
+          </Menu>
+        </Group>
+      );
+    }
+  } else if (selectedNode?.type === 'leaderboard') {
+    // Leaderboard breadcrumb
+    breadcrumbItems.push(
+      <Group key="leaderboard-group" gap={4}>
+        <Anchor 
+          href={`/programs/${program.meta.resourceId}/leaderboard`}
+          onClick={(e) => { 
+            e.preventDefault(); 
+            navigate({ to: '/programs/$programId/leaderboard', params: { programId: program.meta.resourceId } });
+          }}
+        >
+          Leaderboard
+        </Anchor>
+        {createSiblingMenu()}
+      </Group>
     );
   }
 
