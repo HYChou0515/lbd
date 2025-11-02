@@ -10,10 +10,10 @@ import {
   ActionIcon,
   SegmentedControl,
   Select,
+  Stack,
 } from '@mantine/core';
 import {
   IconExternalLink,
-  IconFileText,
   IconTable,
   IconChartLine,
   IconEye,
@@ -121,8 +121,6 @@ export function SubmissionSection({ onViewDetail, programId }: SubmissionSection
       group: 'Others', 
       items: [
         { value: '__status__', label: 'Status' },
-        { value: '__log__', label: 'Log' },
-        { value: '__artifact__', label: 'Artifact' },
       ]
     },
   ];
@@ -138,8 +136,6 @@ export function SubmissionSection({ onViewDetail, programId }: SubmissionSection
     { id: '__cpu_time__', name: 'CPU Time', type: 'execution' as const },
     { id: '__memory__', name: 'Memory', type: 'execution' as const },
     { id: '__status__', name: '', type: 'action' as const },
-    { id: '__log__', name: '', type: 'action' as const },
-    { id: '__artifact__', name: '', type: 'action' as const },
   ];
     
   const filteredMetrics = selectedEvals.length > 0
@@ -213,6 +209,26 @@ export function SubmissionSection({ onViewDetail, programId }: SubmissionSection
           
           return (
             <Group gap="xs">
+                <Stack gap="0">
+          <Tooltip label="View submission files">
+            <ActionIcon
+              size="sm"
+              variant="light"
+              color="blue"
+              onClick={() => {
+                const submissionId = row.original.submission.meta.resourceId;
+                // Navigate to submission detail URL
+                navigate({ 
+                  to: '/programs/$programId/submissions/$submissionId', 
+                  params: { programId, submissionId } 
+                });
+                // Also call the callback for state management
+                onViewDetail?.(submissionId);
+              }}
+            >
+              <IconEye size={16} />
+            </ActionIcon>
+          </Tooltip>
               {algo && (
                 <Tooltip label="View on GitLab">
                   <ActionIcon
@@ -226,6 +242,7 @@ export function SubmissionSection({ onViewDetail, programId }: SubmissionSection
                   </ActionIcon>
                 </Tooltip>
               )}
+              </Stack>
               <Box>
                 <Text size="sm" fw={500}>
                   {algo?.data.name || 'Unknown'}
@@ -247,34 +264,6 @@ export function SubmissionSection({ onViewDetail, programId }: SubmissionSection
             time={row.original.submission.data.submission_time} 
             size="sm"
           />
-        ),
-      },
-      {
-        id: 'view_detail',
-        header: 'View Detail',
-        size: 100,
-        enableSorting: false,
-        enableResizing: false,
-        Cell: ({ row }) => (
-          <Tooltip label="View submission files">
-            <ActionIcon
-              size="sm"
-              variant="light"
-              color="blue"
-              onClick={() => {
-                const submissionId = row.original.submission.meta.resourceId;
-                // Navigate to submission detail URL
-                navigate({ 
-                  to: '/programs/$programId/submissions/$submissionId', 
-                  params: { programId, submissionId } 
-                });
-                // Also call the callback for state management
-                onViewDetail?.(submissionId);
-              }}
-            >
-              <IconEye size={16} />
-            </ActionIcon>
-          </Tooltip>
         ),
       },
     ];
@@ -310,64 +299,6 @@ export function SubmissionSection({ onViewDetail, programId }: SubmissionSection
                   >
                     {execResult.status}
                   </Badge>
-                );
-              },
-            });
-          } else if (metric.id === '__log__') {
-            caseColumns.push({
-              id: key,
-              header: '',
-              size: 45,
-              enableResizing: false,
-              enableSorting: false,
-              Cell: ({ row }) => {
-                const execResult = row.original[`${caseItem.meta.resourceId}_execResult`] as ExecutionResult | undefined;
-                
-                if (!execResult?.log_url) {
-                  return <Text size="sm" c="dimmed">-</Text>;
-                }
-
-                return (
-                  <Tooltip label="View Log">
-                    <ActionIcon
-                      component="a"
-                      href={execResult.log_url}
-                      target="_blank"
-                      size="sm"
-                      variant="light"
-                    >
-                      <IconFileText size={16} />
-                    </ActionIcon>
-                  </Tooltip>
-                );
-              },
-            });
-          } else if (metric.id === '__artifact__') {
-            caseColumns.push({
-              id: key,
-              header: '',
-              size: 45,
-              enableResizing: false,
-              enableSorting: false,
-              Cell: ({ row }) => {
-                const execResult = row.original[`${caseItem.meta.resourceId}_execResult`] as ExecutionResult | undefined;
-                
-                if (!execResult?.artifact_url) {
-                  return <Text size="sm" c="dimmed">-</Text>;
-                }
-
-                return (
-                  <Tooltip label="View Artifact">
-                    <ActionIcon
-                      component="a"
-                      href={execResult.artifact_url}
-                      target="_blank"
-                      size="sm"
-                      variant="light"
-                    >
-                      <IconExternalLink size={16} />
-                    </ActionIcon>
-                  </Tooltip>
                 );
               },
             });

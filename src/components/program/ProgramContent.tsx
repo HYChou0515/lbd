@@ -11,7 +11,9 @@ import {
   mockAlgoCode, 
   mockExecutionResults, 
   mockEvaluationResults,
-  mockCases 
+  mockCases,
+  mockSampleCode,
+  mockEvalCode
 } from '../../data/mockProgramData';
 import { formatAbsoluteTime } from '../../utils/timeUtils';
 
@@ -96,17 +98,183 @@ ${program.data.description}
         );
 
       case 'open-data':
-      case 'open-exam':
-      case 'close-exam':
-      case 'sample-code':
-      case 'eval-code':
+        const openDataCases = mockCases.filter(c => c.data.case_type === 'open data');
+        const openDataMarkdown = `# Open Data Cases
+
+Open Data cases are publicly available test cases that participants can use to develop and validate their algorithms.
+
+## Summary
+- **Total Cases:** ${openDataCases.length}
+- **Purpose:** Training and development
+- **Visibility:** Full dataset and expected outputs are available
+
+## Available Cases
+
+${openDataCases.map(c => `### ${c.data.name}
+- **Case ID:** ${c.meta.resourceId}
+- **Dataset:** ${c.data.dataset_revision_id}
+- **Description:** ${c.data.description || 'N/A'}
+- **Created:** ${c.meta.createdTime}
+
+[View Case Details](/programs/${programId}/open-data/${c.meta.resourceId})
+
+---
+`).join('\n')}
+
+*Click on any case above or select from the tree to view detailed information.*
+`;
         return (
-          <Stack align="center" justify="center" h="100%" p="xl">
-            <Title order={3} c="dimmed">{selectedNode.label}</Title>
-            <Text c="dimmed" size="sm">
-              Select a specific item from this category
-            </Text>
-          </Stack>
+          <ContentViewer
+            content={openDataMarkdown}
+            language="markdown"
+            title="Open Data Cases"
+            resourceType="case"
+            showToggle={true}
+          />
+        );
+
+      case 'open-exam':
+        const openExamCases = mockCases.filter(c => c.data.case_type === 'open exam');
+        const openExamMarkdown = `# Open Exam Cases
+
+Open Exam cases are public test cases used for evaluation. Input data is visible, but expected outputs may be hidden.
+
+## Summary
+- **Total Cases:** ${openExamCases.length}
+- **Purpose:** Public evaluation and testing
+- **Visibility:** Input data available, outputs may be hidden
+
+## Available Cases
+
+${openExamCases.map(c => `### ${c.data.name}
+- **Case ID:** ${c.meta.resourceId}
+- **Dataset:** ${c.data.dataset_revision_id}
+- **Description:** ${c.data.description || 'N/A'}
+- **Created:** ${c.meta.createdTime}
+
+[View Case Details](/programs/${programId}/open-exam/${c.meta.resourceId})
+
+---
+`).join('\n')}
+
+*Click on any case above or select from the tree to view detailed information.*
+`;
+        return (
+          <ContentViewer
+            content={openExamMarkdown}
+            language="markdown"
+            title="Open Exam Cases"
+            resourceType="case"
+            showToggle={true}
+          />
+        );
+
+      case 'close-exam':
+        const closeExamCases = mockCases.filter(c => c.data.case_type === 'close exam');
+        const closeExamMarkdown = `# Close Exam Cases
+
+Close Exam cases are private test cases used for final evaluation. Both input and output data are hidden from participants.
+
+## Summary
+- **Total Cases:** ${closeExamCases.length}
+- **Purpose:** Final evaluation and ranking
+- **Visibility:** Hidden until evaluation is complete
+
+## Available Cases
+
+${closeExamCases.map(c => `### ${c.data.name}
+- **Case ID:** ${c.meta.resourceId}
+- **Dataset:** ${c.data.dataset_revision_id}
+- **Description:** ${c.data.description || 'N/A'}
+- **Created:** ${c.meta.createdTime}
+
+[View Case Details](/programs/${programId}/close-exam/${c.meta.resourceId})
+
+---
+`).join('\n')}
+
+*Click on any case above or select from the tree to view detailed information.*
+`;
+        return (
+          <ContentViewer
+            content={closeExamMarkdown}
+            language="markdown"
+            title="Close Exam Cases"
+            resourceType="case"
+            showToggle={true}
+          />
+        );
+
+      case 'sample-code':
+        const sampleCodeMarkdown = `# Sample Code
+
+Sample code provides baseline implementations and examples to help participants understand the problem and get started.
+
+## Summary
+- **Total Samples:** ${mockSampleCode.length}
+- **Purpose:** Reference implementations and examples
+- **Usage:** Use as starting point for your own algorithms
+
+## Available Sample Code
+
+${mockSampleCode.map(c => `### ${c.data.name}
+- **Code ID:** ${c.meta.resourceId}
+- **Type:** ${c.data.code_type}
+- **Description:** ${c.data.description}
+- **Commit:** ${c.data.commit_hash}
+- **GitLab:** [View Source](${c.data.gitlab_url})
+
+[View Code Details](/programs/${programId}/sample-code/${c.meta.resourceId})
+
+---
+`).join('\n')}
+
+*Click on any code above or select from the tree to view the implementation.*
+`;
+        return (
+          <ContentViewer
+            content={sampleCodeMarkdown}
+            language="markdown"
+            title="Sample Code"
+            resourceType="code"
+            showToggle={true}
+          />
+        );
+
+      case 'eval-code':
+        const evalCodeMarkdown = `# Evaluation Code
+
+Evaluation code is used to score and rank submissions. These scripts define the metrics and evaluation criteria.
+
+## Summary
+- **Total Evaluators:** ${mockEvalCode.length}
+- **Purpose:** Scoring and ranking submissions
+- **Metrics:** Custom evaluation functions
+
+## Available Evaluation Code
+
+${mockEvalCode.map(c => `### ${c.data.name}
+- **Code ID:** ${c.meta.resourceId}
+- **Type:** ${c.data.code_type}
+- **Description:** ${c.data.description}
+- **Commit:** ${c.data.commit_hash}
+- **GitLab:** [View Source](${c.data.gitlab_url})
+
+[View Code Details](/programs/${programId}/eval-code/${c.meta.resourceId})
+
+---
+`).join('\n')}
+
+*Click on any evaluator above or select from the tree to view the implementation.*
+`;
+        return (
+          <ContentViewer
+            content={evalCodeMarkdown}
+            language="markdown"
+            title="Evaluation Code"
+            resourceType="code"
+            showToggle={true}
+          />
         );
 
       case 'case':

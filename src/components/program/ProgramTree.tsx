@@ -45,6 +45,8 @@ interface TreeNodeProps {
 
 function TreeNode({ node, level, selectedNode, onNodeSelect, programId, submissionsPage, totalPages, onSubmissionsPageChange }: TreeNodeProps) {
   const navigate = useNavigate();
+  const hasChildren = node.children && node.children.length > 0;
+  const isSelected = selectedNode?.id === node.id;
   
   // Determine initial open state
   const shouldBeOpen = () => {
@@ -56,12 +58,21 @@ function TreeNode({ node, level, selectedNode, onNodeSelect, programId, submissi
       return true;
     }
     
+    // If this node is selected and has children, open it
+    if (selectedNode?.id === node.id && hasChildren) {
+      return true;
+    }
+    
+    // If a child is selected, open this parent node
+    // Check if selectedNode's parentType matches this node's type
+    if (selectedNode?.metadata?.parentType === node.type) {
+      return true;
+    }
+    
     return false;
   };
   
   const [isOpen, setIsOpen] = useState(shouldBeOpen());
-  const hasChildren = node.children && node.children.length > 0;
-  const isSelected = selectedNode?.id === node.id;
   
   // Update open state when selectedNode changes
   useEffect(() => {
@@ -69,7 +80,15 @@ function TreeNode({ node, level, selectedNode, onNodeSelect, programId, submissi
     if (node.type === 'submissions' && selectedNode?.type === 'submission') {
       setIsOpen(true);
     }
-  }, [selectedNode, node.type]);
+    // If this node is selected and has children, open it
+    else if (selectedNode?.id === node.id && hasChildren) {
+      setIsOpen(true);
+    }
+    // If a child is selected (parentType matches this node's type), open this parent
+    else if (selectedNode?.metadata?.parentType === node.type) {
+      setIsOpen(true);
+    }
+  }, [selectedNode, node.id, node.type, hasChildren]);
   
   // Special rendering for pagination node
   if (node.type === 'pagination' && submissionsPage !== undefined && totalPages !== undefined && onSubmissionsPageChange) {
@@ -159,17 +178,69 @@ function TreeNode({ node, level, selectedNode, onNodeSelect, programId, submissi
           // Select the node first
           onNodeSelect(node);
           
-          // If clicking submissions node, navigate to submissions URL
+          // Navigate based on node type
           if (node.type === 'submissions') {
             navigate({ to: '/programs/$programId/submissions', params: { programId } });
           }
-          // If clicking a submission child node, navigate to that submission's detail
           else if (node.type === 'submission') {
             e.stopPropagation(); // Prevent parent from being selected
             navigate({ 
               to: '/programs/$programId/submissions/$submissionId', 
               params: { programId, submissionId: node.id } 
             });
+          }
+          else if (node.type === 'open-data') {
+            navigate({ to: '/programs/$programId/open-data', params: { programId } });
+          }
+          else if (node.type === 'open-exam') {
+            navigate({ to: '/programs/$programId/open-exam', params: { programId } });
+          }
+          else if (node.type === 'close-exam') {
+            navigate({ to: '/programs/$programId/close-exam', params: { programId } });
+          }
+          else if (node.type === 'sample-code') {
+            navigate({ to: '/programs/$programId/sample-code', params: { programId } });
+          }
+          else if (node.type === 'eval-code') {
+            navigate({ to: '/programs/$programId/eval-code', params: { programId } });
+          }
+          else if (node.type === 'leaderboard') {
+            navigate({ to: '/programs/$programId/leaderboard', params: { programId } });
+          }
+          else if (node.type === 'case') {
+            // Determine which route based on parent type
+            const parentType = node.metadata?.parentType;
+            if (parentType === 'open-data') {
+              navigate({ 
+                to: '/programs/$programId/open-data/$caseId', 
+                params: { programId, caseId: node.id } 
+              });
+            } else if (parentType === 'open-exam') {
+              navigate({ 
+                to: '/programs/$programId/open-exam/$caseId', 
+                params: { programId, caseId: node.id } 
+              });
+            } else if (parentType === 'close-exam') {
+              navigate({ 
+                to: '/programs/$programId/close-exam/$caseId', 
+                params: { programId, caseId: node.id } 
+              });
+            }
+          }
+          else if (node.type === 'code') {
+            // Determine which route based on parent type
+            const parentType = node.metadata?.parentType;
+            if (parentType === 'sample-code') {
+              navigate({ 
+                to: '/programs/$programId/sample-code/$codeId', 
+                params: { programId, codeId: node.id } 
+              });
+            } else if (parentType === 'eval-code') {
+              navigate({ 
+                to: '/programs/$programId/eval-code/$codeId', 
+                params: { programId, codeId: node.id } 
+              });
+            }
           }
           
           // Toggle expansion for nodes with children
@@ -300,7 +371,7 @@ export function ProgramTree({ program, selectedNode, onNodeSelect, programId, su
             id: c.meta.resourceId,
             type: 'case' as const,
             label: c.data.name,
-            metadata: { case: c },
+            metadata: { case: c, parentType: 'open-data' },
           })),
         },
         {
@@ -311,7 +382,7 @@ export function ProgramTree({ program, selectedNode, onNodeSelect, programId, su
             id: c.meta.resourceId,
             type: 'case' as const,
             label: c.data.name,
-            metadata: { case: c },
+            metadata: { case: c, parentType: 'open-exam' },
           })),
         },
         {
@@ -322,7 +393,7 @@ export function ProgramTree({ program, selectedNode, onNodeSelect, programId, su
             id: c.meta.resourceId,
             type: 'case' as const,
             label: c.data.name,
-            metadata: { case: c },
+            metadata: { case: c, parentType: 'close-exam' },
           })),
         },
         {
@@ -333,7 +404,7 @@ export function ProgramTree({ program, selectedNode, onNodeSelect, programId, su
             id: c.meta.resourceId,
             type: 'code' as const,
             label: c.data.name,
-            metadata: { code: c },
+            metadata: { code: c, parentType: 'sample-code' },
           })),
         },
         {
@@ -344,7 +415,7 @@ export function ProgramTree({ program, selectedNode, onNodeSelect, programId, su
             id: c.meta.resourceId,
             type: 'code' as const,
             label: c.data.name,
-            metadata: { code: c },
+            metadata: { code: c, parentType: 'eval-code' },
           })),
         },
         {

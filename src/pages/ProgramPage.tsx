@@ -37,7 +37,7 @@ import { ProgramContent } from '../components/program/ProgramContent';
 import { ProgramMetaInfo } from '../components/program/ProgramMetaInfo';
 import type { FileNode } from '../data/mockFileStructure';
 import { mockProgramFileStructure } from '../data/mockProgramFileStructure';
-import { mockExecutionResults, mockCases, mockSubmissions, mockAlgoCode } from '../data/mockProgramData';
+import { mockExecutionResults, mockCases, mockSubmissions, mockAlgoCode, mockSampleCode, mockEvalCode } from '../data/mockProgramData';
 import { formatAbsoluteTime } from '../utils/timeUtils';
 
 export type ProgramNodeType = 
@@ -204,6 +204,118 @@ export function ProgramPage({ program }: ProgramPageProps) {
         });
         setSelectedSubmissionId(null);
       }
+    } else if (pathname.includes('/open-data')) {
+      const openDataIndex = pathParts.indexOf('open-data');
+      if (openDataIndex !== -1 && pathParts[openDataIndex + 1]) {
+        const caseId = pathParts[openDataIndex + 1];
+        const caseData = mockCases.find(c => c.meta.resourceId === caseId);
+        if (caseData) {
+          setSelectedNode({
+            id: caseId,
+            type: 'case',
+            label: caseData.data.name,
+            metadata: { case: caseData, parentType: 'open-data' },
+          });
+        }
+      } else {
+        setSelectedNode({
+          id: 'open-data',
+          type: 'open-data',
+          label: 'Open Data',
+        });
+      }
+      setSelectedSubmissionId(null);
+    } else if (pathname.includes('/open-exam')) {
+      const openExamIndex = pathParts.indexOf('open-exam');
+      if (openExamIndex !== -1 && pathParts[openExamIndex + 1]) {
+        const caseId = pathParts[openExamIndex + 1];
+        const caseData = mockCases.find(c => c.meta.resourceId === caseId);
+        if (caseData) {
+          setSelectedNode({
+            id: caseId,
+            type: 'case',
+            label: caseData.data.name,
+            metadata: { case: caseData, parentType: 'open-exam' },
+          });
+        }
+      } else {
+        setSelectedNode({
+          id: 'open-exam',
+          type: 'open-exam',
+          label: 'Open Exam',
+        });
+      }
+      setSelectedSubmissionId(null);
+    } else if (pathname.includes('/close-exam')) {
+      const closeExamIndex = pathParts.indexOf('close-exam');
+      if (closeExamIndex !== -1 && pathParts[closeExamIndex + 1]) {
+        const caseId = pathParts[closeExamIndex + 1];
+        const caseData = mockCases.find(c => c.meta.resourceId === caseId);
+        if (caseData) {
+          setSelectedNode({
+            id: caseId,
+            type: 'case',
+            label: caseData.data.name,
+            metadata: { case: caseData, parentType: 'close-exam' },
+          });
+        }
+      } else {
+        setSelectedNode({
+          id: 'close-exam',
+          type: 'close-exam',
+          label: 'Close Exam',
+        });
+      }
+      setSelectedSubmissionId(null);
+    } else if (pathname.includes('/sample-code')) {
+      const sampleCodeIndex = pathParts.indexOf('sample-code');
+      if (sampleCodeIndex !== -1 && pathParts[sampleCodeIndex + 1]) {
+        const codeId = pathParts[sampleCodeIndex + 1];
+        const codeData = mockSampleCode.find(c => c.meta.resourceId === codeId);
+        if (codeData) {
+          setSelectedNode({
+            id: codeId,
+            type: 'code',
+            label: codeData.data.name,
+            metadata: { code: codeData, parentType: 'sample-code' },
+          });
+        }
+      } else {
+        setSelectedNode({
+          id: 'sample-code',
+          type: 'sample-code',
+          label: 'Sample Code',
+        });
+      }
+      setSelectedSubmissionId(null);
+    } else if (pathname.includes('/eval-code')) {
+      const evalCodeIndex = pathParts.indexOf('eval-code');
+      if (evalCodeIndex !== -1 && pathParts[evalCodeIndex + 1]) {
+        const codeId = pathParts[evalCodeIndex + 1];
+        const codeData = mockEvalCode.find(c => c.meta.resourceId === codeId);
+        if (codeData) {
+          setSelectedNode({
+            id: codeId,
+            type: 'code',
+            label: codeData.data.name,
+            metadata: { code: codeData, parentType: 'eval-code' },
+          });
+        }
+      } else {
+        setSelectedNode({
+          id: 'eval-code',
+          type: 'eval-code',
+          label: 'Eval Code',
+        });
+      }
+      setSelectedSubmissionId(null);
+    } else if (pathname.includes('/leaderboard')) {
+      setSelectedNode({
+        id: 'leaderboard',
+        type: 'leaderboard',
+        label: 'Leaderboard',
+      });
+      setSelectedSubmissionId(null);
     }
   }, [location.pathname]);
 
