@@ -15,6 +15,7 @@ import {
   Divider,
   Card,
   Collapse,
+  Menu,
 } from '@mantine/core';
 import { 
   IconTrophy, 
@@ -26,6 +27,7 @@ import {
   IconFolderOpen,
   IconFile,
   IconChevronDown,
+  IconDots,
 } from '@tabler/icons-react';
 import { ProgramTree } from '../components/program/ProgramTree';
 import { DetailPageLayout } from '../layouts/DetailPageLayout';
@@ -373,30 +375,130 @@ Click the link above to download the artifact.
 
   // Add additional breadcrumb items based on selected node
   if (selectedNode?.type === 'submissions') {
+    // Submissions breadcrumb with dropdown menu
     breadcrumbItems.push(
-      <Anchor 
-        key="submissions" 
-        href={`/programs/${program.meta.resourceId}/submissions`}
-        onClick={(e) => { 
-          e.preventDefault(); 
-          navigate({ to: '/programs/$programId/submissions', params: { programId: program.meta.resourceId } });
-          setSelectedSubmissionId(null); // 清除選中的 submission
-          setSelectedFile(null); // 清除選中的文件
-        }}
-      >
-        Submissions
-      </Anchor>
+      <Group key="submissions-group" gap={4}>
+        <Anchor 
+          href={`/programs/${program.meta.resourceId}/submissions`}
+          onClick={(e) => { 
+            e.preventDefault(); 
+            navigate({ to: '/programs/$programId/submissions', params: { programId: program.meta.resourceId } });
+            setSelectedSubmissionId(null);
+            setSelectedFile(null);
+          }}
+        >
+          Submissions
+        </Anchor>
+        <Menu position="bottom-start" shadow="md">
+          <Menu.Target>
+            <ActionIcon size="xs" variant="subtle" color="gray">
+              <IconDots size={14} />
+            </ActionIcon>
+          </Menu.Target>
+          <Menu.Dropdown>
+            <Menu.Label>Switch Section</Menu.Label>
+            <Menu.Item onClick={() => {
+              setSelectedNode({ id: 'open-data', type: 'open-data', label: 'Open Data' });
+              setSelectedSubmissionId(null);
+              setSelectedFile(null);
+            }}>
+              Open Data
+            </Menu.Item>
+            <Menu.Item onClick={() => {
+              setSelectedNode({ id: 'open-exam', type: 'open-exam', label: 'Open Exam' });
+              setSelectedSubmissionId(null);
+              setSelectedFile(null);
+            }}>
+              Open Exam
+            </Menu.Item>
+            <Menu.Item onClick={() => {
+              setSelectedNode({ id: 'close-exam', type: 'close-exam', label: 'Close Exam' });
+              setSelectedSubmissionId(null);
+              setSelectedFile(null);
+            }}>
+              Close Exam
+            </Menu.Item>
+            <Menu.Item onClick={() => {
+              setSelectedNode({ id: 'sample-code', type: 'sample-code', label: 'Sample Code' });
+              setSelectedSubmissionId(null);
+              setSelectedFile(null);
+            }}>
+              Sample Code
+            </Menu.Item>
+            <Menu.Item onClick={() => {
+              setSelectedNode({ id: 'eval-code', type: 'eval-code', label: 'Eval Code' });
+              setSelectedSubmissionId(null);
+              setSelectedFile(null);
+            }}>
+              Eval Code
+            </Menu.Item>
+            <Menu.Item onClick={() => {
+              setSelectedNode({ id: 'leaderboard', type: 'leaderboard', label: 'Leaderboard' });
+              setSelectedSubmissionId(null);
+              setSelectedFile(null);
+            }}>
+              Leaderboard
+            </Menu.Item>
+          </Menu.Dropdown>
+        </Menu>
+      </Group>
     );
     
-    // Add selected submission info
+    // Add selected submission info with dropdown
     if (selectedSubmissionId) {
       const submission = mockSubmissions.find(s => s.meta.resourceId === selectedSubmissionId);
       if (submission) {
         const algo = mockAlgoCode.find(a => a.meta.resourceId === submission.data.algo_id);
         const algoName = algo?.data.name || 'Unknown';
         const submissionTime = formatAbsoluteTime(submission.data.submission_time);
+        
+        // Get all user submissions for dropdown
+        const CURRENT_USER = 'user1';
+        const userSubmissions = mockSubmissions
+          .filter(s => s.data.submitter === CURRENT_USER)
+          .sort((a, b) => new Date(b.data.submission_time).getTime() - new Date(a.data.submission_time).getTime());
+        
         breadcrumbItems.push(
-          <Text key="submission-detail">{algoName} ({submissionTime})</Text>
+          <Group key="submission-detail-group" gap={4}>
+            <Text>{algoName} ({submissionTime})</Text>
+            <Menu position="bottom-start" shadow="md" width={300}>
+              <Menu.Target>
+                <ActionIcon size="xs" variant="subtle" color="gray">
+                  <IconDots size={14} />
+                </ActionIcon>
+              </Menu.Target>
+              <Menu.Dropdown>
+                <Menu.Label>Switch Submission</Menu.Label>
+                {userSubmissions.map(sub => {
+                  const subAlgo = mockAlgoCode.find(a => a.meta.resourceId === sub.data.algo_id);
+                  const subAlgoName = subAlgo?.data.name || 'Unknown';
+                  const subTime = formatAbsoluteTime(sub.data.submission_time);
+                  const isActive = sub.meta.resourceId === selectedSubmissionId;
+                  
+                  return (
+                    <Menu.Item
+                      key={sub.meta.resourceId}
+                      onClick={() => {
+                        navigate({ 
+                          to: '/programs/$programId/submissions/$submissionId', 
+                          params: { 
+                            programId: program.meta.resourceId, 
+                            submissionId: sub.meta.resourceId 
+                          } 
+                        });
+                        setSelectedSubmissionId(sub.meta.resourceId);
+                        setSelectedFile(null);
+                      }}
+                      color={isActive ? 'blue' : undefined}
+                      style={{ fontWeight: isActive ? 600 : 400 }}
+                    >
+                      {subAlgoName} ({subTime})
+                    </Menu.Item>
+                  );
+                })}
+              </Menu.Dropdown>
+            </Menu>
+          </Group>
         );
       }
     }
@@ -506,6 +608,7 @@ Click the link above to download the artifact.
           onSubmissionSelect={setSelectedSubmissionId}
           selectedFile={selectedFile}
           programId={program.meta.resourceId}
+          selectedSubmissionId={selectedSubmissionId}
         />
       }
       rightPanel={

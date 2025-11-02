@@ -6,6 +6,14 @@ import { SubmissionSection } from '../submission/SubmissionSection';
 import { ContentViewer } from '../ContentViewer';
 import { generateCaseMarkdown } from '../../utils/contentGenerators';
 import type { FileNode } from '../../data/mockFileStructure';
+import { 
+  mockSubmissions, 
+  mockAlgoCode, 
+  mockExecutionResults, 
+  mockEvaluationResults,
+  mockCases 
+} from '../../data/mockProgramData';
+import { formatAbsoluteTime } from '../../utils/timeUtils';
 
 interface ProgramContentProps {
   program: Resource<Program>;
@@ -13,9 +21,10 @@ interface ProgramContentProps {
   onSubmissionSelect?: (submissionId: string | null) => void;
   selectedFile?: FileNode | null;
   programId: string;
+  selectedSubmissionId?: string | null;
 }
 
-export function ProgramContent({ program, selectedNode, onSubmissionSelect, selectedFile, programId }: ProgramContentProps) {
+export function ProgramContent({ program, selectedNode, onSubmissionSelect, selectedFile, programId, selectedSubmissionId }: ProgramContentProps) {
 
   // If a file is selected, show its content
   if (selectedFile) {
@@ -160,7 +169,106 @@ def sample_algorithm():
         );
 
       case 'submissions':
-        // Show SubmissionSection inline without changing route
+        // If a specific submission is selected, show its details
+        if (selectedSubmissionId) {
+          const submission = mockSubmissions.find(s => s.meta.resourceId === selectedSubmissionId);
+          if (!submission) {
+            return (
+              <Stack align="center" justify="center" h="100%" p="xl">
+                <Title order={3} c="dimmed">Submission not found</Title>
+              </Stack>
+            );
+          }
+
+          // Get algorithm info
+          const algo = mockAlgoCode.find(a => a.meta.resourceId === submission.data.algo_id);
+          const algoName = algo?.data.name || 'Unknown';
+          
+          // Get execution results
+          const execResults = mockExecutionResults.filter(r => r.submission_id === selectedSubmissionId);
+          const execSummary = execResults.reduce((acc, result) => {
+            acc[result.status] = (acc[result.status] || 0) + 1;
+            return acc;
+          }, {} as Record<string, number>);
+          
+          // Get evaluation results
+          const evalResults = mockEvaluationResults.filter(r => r.submission_id === selectedSubmissionId);
+          
+          // Build submission detail markdown
+          let markdown = `# Submission Details
+
+## Basic Information
+- **Algorithm:** ${algoName}
+- **Submission ID:** ${submission.meta.resourceId}
+- **Submitter:** ${submission.data.submitter}
+- **Submission Time:** ${formatAbsoluteTime(submission.data.submission_time)}
+- **Created:** ${submission.meta.createdTime}
+
+## Execution Summary
+Total Cases: ${execResults.length}
+
+`;
+          
+          // Add execution status breakdown
+          if (Object.keys(execSummary).length > 0) {
+            markdown += '### Status Breakdown\n';
+            Object.entries(execSummary).forEach(([status, count]) => {
+              markdown += `- **${status}:** ${count} case(s)\n`;
+            });
+            markdown += '\n';
+          }
+          
+          // Add evaluation results summary
+          if (evalResults.length > 0) {
+            markdown += '## Evaluation Results\n\n';
+            markdown += '| Case | Eval Code | Score |\n';
+            markdown += '|------|-----------|-------|\n';
+            
+            evalResults.forEach(evalResult => {
+              const caseInfo = mockCases.find(c => c.meta.resourceId === evalResult.case_id);
+              const caseName = caseInfo?.data.name || evalResult.case_id;
+              markdown += `| ${caseName} | ${evalResult.eval_code_id} | ${evalResult.score.toFixed(4)} |\n`;
+            });
+            markdown += '\n';
+          }
+          
+          // Add execution details
+          if (execResults.length > 0) {
+            markdown += '## Execution Details\n\n';
+            execResults.forEach(execResult => {
+              const caseInfo = mockCases.find(c => c.meta.resourceId === execResult.case_id);
+              const caseName = caseInfo?.data.name || execResult.case_id;
+              
+              markdown += `### ${caseName}\n`;
+              markdown += `- **Status:** ${execResult.status}\n`;
+              markdown += `- **Wall Time:** ${execResult.wall_time}s\n`;
+              markdown += `- **CPU Time:** ${execResult.cpu_time}s\n`;
+              markdown += `- **Memory:** ${execResult.memory} MB\n`;
+              
+              if (execResult.log_url) {
+                markdown += `- **Log URL:** ${execResult.log_url}\n`;
+              }
+              if (execResult.artifact_url) {
+                markdown += `- **Artifact URL:** ${execResult.artifact_url}\n`;
+              }
+              markdown += '\n';
+            });
+          }
+          
+          markdown += `\n---\n\n*Select files from the left panel to view logs and artifacts.*`;
+          
+          return (
+            <ContentViewer
+              content={markdown}
+              language="markdown"
+              title={`${algoName} - ${formatAbsoluteTime(submission.data.submission_time)}`}
+              resourceType="code"
+              showToggle={true}
+            />
+          );
+        }
+        
+        // Otherwise show SubmissionSection table
         return <SubmissionSection onViewDetail={onSubmissionSelect} programId={programId} />;
 
       case 'leaderboard':
