@@ -27,7 +27,7 @@ import {
   IconFolderOpen,
   IconChevronDown,
 } from '@tabler/icons-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import Editor from '@monaco-editor/react';
 import MarkdownPreview from '@uiw/react-markdown-preview';
@@ -43,6 +43,7 @@ import { DetailPageLayout } from '../layouts/DetailPageLayout';
 
 interface DatasetDetailPageProps {
   datasetMeta: Resource<Dataset>;
+  selectedDatasetId?: string; // Optional: if provided, will display this subdataset
 }
 
 // Dataset Type 對應的顏色
@@ -230,10 +231,26 @@ function FileStructurePreview({ onSelectFile, selectedFile }: { onSelectFile: (n
   );
 }
 
-export function DatasetDetailPage({ datasetMeta }: DatasetDetailPageProps) {
+export function DatasetDetailPage({ datasetMeta, selectedDatasetId }: DatasetDetailPageProps) {
   const navigate = useNavigate();
   const { data } = datasetMeta;
-  const [selectedDataset, setSelectedDataset] = useState<Resource<Dataset>>(datasetMeta);
+  
+  // Find the selected dataset based on selectedDatasetId
+  const findDatasetById = (dataset: Resource<Dataset>, id: string): Resource<Dataset> | null => {
+    if (dataset.meta.resourceId === id) return dataset;
+    const subdatasets = getSubdatasets(dataset);
+    for (const sub of subdatasets) {
+      const found = findDatasetById(sub, id);
+      if (found) return found;
+    }
+    return null;
+  };
+
+  const initialDataset = selectedDatasetId 
+    ? findDatasetById(datasetMeta, selectedDatasetId) || datasetMeta
+    : datasetMeta;
+
+  const [selectedDataset, setSelectedDataset] = useState<Resource<Dataset>>(initialDataset);
   const [selectedFile, setSelectedFile] = useState<FileNode | null>(null);
   const [breadcrumbPath, setBreadcrumbPath] = useState<Resource<Dataset>[]>([datasetMeta]);
   const [isMarkdownPreview, setIsMarkdownPreview] = useState(false); // 新增預覽模式狀態
@@ -246,35 +263,44 @@ export function DatasetDetailPage({ datasetMeta }: DatasetDetailPageProps) {
   };
 
   const handleSelectDataset = (dataset: Resource<Dataset>) => {
-    setSelectedDataset(dataset);
-    setSelectedFile(null); // 切換 dataset 時清除檔案選擇
-    
-    // 更新 breadcrumb 路徑
-    const currentIndex = breadcrumbPath.findIndex(d => d.meta.revisionId === dataset.meta.revisionId);
-    if (currentIndex !== -1) {
-      // 如果是點擊 breadcrumb 中的項目，截斷到該位置
-      setBreadcrumbPath(breadcrumbPath.slice(0, currentIndex + 1));
-    } else {
-      // 檢查是否是當前路徑中某個 dataset 的直接子項
-      // 從路徑末端往前找，找到第一個包含這個 dataset 作為子項的父 dataset
-      let foundParentIndex = -1;
-      for (let i = breadcrumbPath.length - 1; i >= 0; i--) {
-        const parent = breadcrumbPath[i];
-        if (parent.data.sub_dataset_revision_ids.includes(dataset.meta.revisionId)) {
-          foundParentIndex = i;
-          break;
+    // Navigate to the subdataset route
+    navigate({ 
+      to: '/datasets/$datasetId',
+      params: { datasetId: dataset.meta.resourceId }
+    });
+  };
+
+  // Update selected dataset when selectedDatasetId changes
+  useEffect(() => {
+    if (selectedDatasetId) {
+      const found = findDatasetById(datasetMeta, selectedDatasetId);
+      if (found) {
+        setSelectedDataset(found);
+        setSelectedFile(null);
+        
+        // Build breadcrumb path
+        const buildPath = (dataset: Resource<Dataset>, targetId: string, currentPath: Resource<Dataset>[]): Resource<Dataset>[] | null => {
+          if (dataset.meta.resourceId === targetId) {
+            return [...currentPath, dataset];
+          }
+          const subdatasets = getSubdatasets(dataset);
+          for (const sub of subdatasets) {
+            const result = buildPath(sub, targetId, [...currentPath, dataset]);
+            if (result) return result;
+          }
+          return null;
+        };
+        
+        const path = buildPath(datasetMeta, selectedDatasetId, []);
+        if (path) {
+          setBreadcrumbPath(path);
         }
       }
-      
-      if (foundParentIndex !== -1) {
-        // 如果找到父節點，截斷到父節點並加上當前節點
-        setBreadcrumbPath([...breadcrumbPath.slice(0, foundParentIndex + 1), dataset]);
-      } else {
-        // 如果沒找到父節點（不應該發生），就直接添加
-        setBreadcrumbPath([...breadcrumbPath, dataset]);
-      }
+    } else {
+      setSelectedDataset(datasetMeta);
+      setBreadcrumbPath([datasetMeta]);
     }
-  };
+  }, [selectedDatasetId, datasetMeta]);
 
   const handleSelectFile = (file: FileNode) => {
     setSelectedFile(file);
@@ -561,8 +587,8 @@ ${subdatasets.length > 0
                 rightSection={<IconChevronRight size={16} />}
                 onClick={() => {
                   navigate({ 
-                    to: '/dataset/$resourceId', 
-                    params: { resourceId: selectedDataset.meta.resourceId } 
+                    to: '/datasets/$datasetId', 
+                    params: { datasetId: selectedDataset.meta.resourceId } 
                   });
                 }}
               >
