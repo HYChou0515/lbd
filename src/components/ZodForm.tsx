@@ -38,6 +38,7 @@ export type FieldConfig =
   | (BaseFieldConfig & { type: 'date' })
   | (BaseFieldConfig & { type: 'file'; accept?: string; multiple?: boolean })
   | (BaseFieldConfig & { type: 's3url'; buckets?: string[]; allowCustomBucket?: boolean })
+  | (BaseFieldConfig & { type: 'giturl'; platforms?: ('github' | 'gitlab')[]; })
   | BaseFieldConfig; // No type = auto-infer
 
 // After resolving: guaranteed to have correct type and all properties
@@ -50,7 +51,8 @@ export type ResolvedFieldConfig =
   | (BaseFieldConfig & { type: 'switch' })
   | (BaseFieldConfig & { type: 'date' })
   | (BaseFieldConfig & { type: 'file'; accept?: string; multiple?: boolean })
-  | (BaseFieldConfig & { type: 's3url'; buckets: string[]; allowCustomBucket: boolean });
+  | (BaseFieldConfig & { type: 's3url'; buckets: string[]; allowCustomBucket: boolean })
+  | (BaseFieldConfig & { type: 'giturl'; platforms: ('github' | 'gitlab')[]; });
 
 // Metadata is just FieldConfig without the name requirement
 export type FieldMetadata = Omit<FieldConfig, 'name'> & { name?: string };
@@ -368,6 +370,134 @@ function S3UrlField({ config, form }: S3UrlFieldProps) {
 }
 
 // ============================================================================
+// Git URL Field Component
+// ============================================================================
+
+interface GitUrlFieldProps {
+  config: ResolvedFieldConfig & { type: 'giturl'; platforms: ('github' | 'gitlab')[] } & { required: boolean };
+  form: any;
+}
+
+function GitUrlField({ config, form }: GitUrlFieldProps) {
+  const [inputValue, setInputValue] = useState<string>('');
+
+  // Parse various Git URL formats and normalize to HTTPS with .git
+  const parseAndNormalizeGitUrl = (url: string): string | null => {
+    if (!url) return null;
+    
+    const trimmed = url.trim();
+    
+    // Build allowed platforms regex based on config
+    const allowedPlatforms = config.platforms.length > 0 
+      ? config.platforms.map(p => `${p}\\.com`).join('|')
+      : 'github\\.com|gitlab\\.com';
+    
+    // Match SSH format: git@github.com:HYChou0515/autocrud.git
+    const sshRegex = new RegExp(`^git@(${allowedPlatforms}):([^\\/]+)\\/(.+?)(?:\\.git)?$`);
+    const sshMatch = trimmed.match(sshRegex);
+    if (sshMatch) {
+      const [, platform, owner, repo] = sshMatch;
+      return `https://${platform}/${owner}/${repo}.git`;
+    }
+    
+    // Try parsing as URL for HTTPS format
+    try {
+      const parsedUrl = new URL(trimmed);
+      const platform = parsedUrl.hostname;
+      
+      // Check if platform is allowed
+      const allowedHostnames = config.platforms.length > 0
+        ? config.platforms.map(p => `${p}.com`)
+        : ['github.com', 'gitlab.com'];
+      
+      if (!allowedHostnames.includes(platform)) {
+        return null;
+      }
+      
+      // Extract owner and repo from pathname: /owner/repo or /owner/repo.git
+      const pathMatch = parsedUrl.pathname.match(/^\/([^\/]+)\/([^\/]+?)(?:\.git)?$/);
+      if (pathMatch) {
+        const [, owner, repo] = pathMatch;
+        return `https://${platform}/${owner}/${repo}.git`;
+      }
+    } catch {
+      // Not a valid URL, continue
+    }
+    
+    return null;
+  };
+
+  // Initialize from form value
+  useEffect(() => {
+    const currentValue = form.values[config.name] || '';
+    if (currentValue) {
+      setInputValue(currentValue);
+    }
+  }, []);
+
+  // Handle input change
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.currentTarget.value;
+    setInputValue(value);
+  };
+
+  // Handle blur - normalize the URL
+  const handleBlur = () => {
+    const normalized = parseAndNormalizeGitUrl(inputValue);
+    if (normalized) {
+      setInputValue(normalized);
+      form.setFieldValue(config.name, normalized);
+    } else if (inputValue) {
+      // If input is not empty but invalid, keep it for validation to catch
+      form.setFieldValue(config.name, inputValue);
+    } else {
+      form.setFieldValue(config.name, '');
+    }
+  };
+
+  // Handle paste - auto-normalize
+  const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    const pastedText = e.clipboardData.getData('text');
+    const normalized = parseAndNormalizeGitUrl(pastedText);
+    
+    if (normalized) {
+      setInputValue(normalized);
+      form.setFieldValue(config.name, normalized);
+    } else {
+      setInputValue(pastedText);
+      form.setFieldValue(config.name, pastedText);
+    }
+  };
+
+  const platformHint = config.platforms.length > 0 
+    ? config.platforms.map(p => p.charAt(0).toUpperCase() + p.slice(1)).join(' / ')
+    : 'GitHub / GitLab';
+
+  return (
+    <Stack gap="xs">
+      <TextInput
+        label={config.label}
+        placeholder={config.placeholder || `貼上 ${platformHint} URL (SSH 或 HTTPS)`}
+        description={config.description}
+        required={config.required}
+        value={inputValue}
+        onChange={handleInputChange}
+        onBlur={handleBlur}
+        onPaste={handlePaste}
+        error={form.errors[config.name]}
+      />
+      
+      {inputValue && !form.errors[config.name] && (
+        <div style={{ fontSize: '12px', color: '#228be6', fontFamily: 'monospace' }}>
+          格式化: {parseAndNormalizeGitUrl(inputValue) || inputValue}
+        </div>
+      )}
+    </Stack>
+  );
+}
+
+// ============================================================================
 // Helper Functions (continued)
 // ============================================================================
 
@@ -458,6 +588,13 @@ function mergeFieldConfig(
         type: 's3url' as const,
         buckets: ('buckets' in merged ? merged.buckets : undefined) ?? [],
         allowCustomBucket: ('allowCustomBucket' in merged ? merged.allowCustomBucket : undefined) ?? true,
+      };
+    
+    case 'giturl':
+      return {
+        ...base,
+        type: 'giturl' as const,
+        platforms: ('platforms' in merged ? merged.platforms : undefined) ?? ['github', 'gitlab'],
       };
     
     case 'text':
@@ -606,6 +743,9 @@ export function ZodForm<T extends Record<string, any>>({
       
       case 's3url':
         return <S3UrlField key={field.name} config={mergedConfig} form={form} />;
+      
+      case 'giturl':
+        return <GitUrlField key={field.name} config={mergedConfig} form={form} />;
       
       case 'text':
       default:

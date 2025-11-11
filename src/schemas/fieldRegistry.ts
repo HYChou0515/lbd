@@ -119,7 +119,40 @@ export const fieldRegistry = {
       allowCustomBucket: false,
       placeholder: "輸入資料集路徑",
       description: "選擇資料集儲存位置"
-      
+
+    })),
+
+  // Git URL fields
+  gitUrl: z.string()
+    .url("必須是有效的 Git URL")
+    .regex(/^https:\/\/(github\.com|gitlab\.com)\/[^\/]+\/[^\/]+\.git$/, "必須是有效的 Git URL 格式")
+    .describe(JSON.stringify({
+      type: "giturl",
+      label: "Git Repository",
+      placeholder: "貼上 GitHub 或 GitLab URL",
+      description: "支援 SSH (git@github.com:user/repo.git) 或 HTTPS 格式，將自動轉換為標準 HTTPS 格式"
+    })),
+
+  githubUrl: z.string()
+    .url("必須是有效的 GitHub URL")
+    .regex(/^https:\/\/github\.com\/[^\/]+\/[^\/]+\.git$/, "必須是有效的 GitHub URL 格式")
+    .describe(JSON.stringify({
+      type: "giturl",
+      label: "GitHub Repository",
+      platforms: ["github"],
+      placeholder: "貼上 GitHub URL",
+      description: "支援 git@github.com:user/repo.git 或 https://github.com/user/repo 格式"
+    })),
+
+  gitlabUrl: z.string()
+    .url("必須是有效的 GitLab URL")
+    .regex(/^https:\/\/gitlab\.com\/[^\/]+\/[^\/]+\.git$/, "必須是有效的 GitLab URL 格式")
+    .describe(JSON.stringify({
+      type: "giturl",
+      label: "GitLab Repository",
+      platforms: ["gitlab"],
+      placeholder: "貼上 GitLab URL",
+      description: "支援 git@gitlab.com:user/repo.git 或 https://gitlab.com/user/repo 格式"
     })),
 
   // User fields

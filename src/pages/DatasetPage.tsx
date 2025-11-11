@@ -72,6 +72,7 @@ const newDatasetSchema = z.object({
   part: fieldRegistry.part,
   confidence: fieldRegistry.confidence,
   csvUrl: fieldRegistry.s3Url,
+  git: fieldRegistry.gitUrl,
 });
 
 type NewDatasetFormValues = z.infer<typeof newDatasetSchema>;
@@ -408,6 +409,7 @@ export function DatasetPage() {
             'part',
             'confidence',
             'csvUrl',
+            'git',
           ]}
           initialValues={{
             confidence: 0.5,
