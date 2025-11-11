@@ -87,6 +87,17 @@ export const fieldRegistry = {
       placeholder: "Enter the part name (optional)"
     })),
 
+  // File upload fields
+  csvFile: z.instanceof(File, { message: "Please upload a CSV file" })
+    .refine((file) => file.size <= 10 * 1024 * 1024, "File size must be less than 10MB")
+    .refine((file) => file.name.endsWith('.csv'), "File must be a CSV file")
+    .describe(JSON.stringify({
+      type: "file",
+      label: "CSV File",
+      accept: ".csv,text/csv",
+      placeholder: "Upload a CSV file"
+    })),
+
   // User fields
   email: z.email("Invalid email address")
     .describe(JSON.stringify({ 
@@ -124,6 +135,31 @@ export const fieldRegistry = {
       min: 0,
       max: 100,
       step: 0.1
+    })),
+
+  // Slider fields - slider range can be different from validation range
+  confidence: z.number()
+    .min(0, "Confidence must be at least 0")
+    .max(1, "Confidence must be at most 1")
+    .describe(JSON.stringify({
+      type: "slider",
+      label: "Confidence Level",
+      sliderMin: 0,
+      sliderMax: 1,
+      step: 0.01,
+      description: "Slider range: 0-1, but you can type any valid number in the input"
+    })),
+
+  threshold: z.number()
+    .min(-100, "Threshold must be at least -100")
+    .max(500, "Threshold must be at most 500")
+    .describe(JSON.stringify({
+      type: "slider",
+      label: "Threshold",
+      sliderMin: 0,
+      sliderMax: 100,
+      step: 5,
+      description: "Slider shows 0-100, but validation allows -100 to 500"
     })),
 
   // Date fields

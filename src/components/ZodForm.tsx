@@ -1,6 +1,6 @@
 import { useForm } from '@mantine/form';
 import { zod4Resolver } from 'mantine-form-zod-resolver';
-import { Button, Stack, TextInput, Textarea, Select, NumberInput, Switch, Group } from '@mantine/core';
+import { Button, Stack, TextInput, Textarea, Select, NumberInput, Switch, Group, FileInput, Slider } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
 import { z } from 'zod';
 
@@ -31,9 +31,11 @@ export type FieldConfig =
   | (BaseFieldConfig & { type: 'text' })
   | (BaseFieldConfig & { type: 'textarea'; rows?: number })
   | (BaseFieldConfig & { type: 'number'; min?: number; max?: number; step?: number })
+  | (BaseFieldConfig & { type: 'slider'; sliderMin?: number; sliderMax?: number; step?: number })
   | (BaseFieldConfig & { type: 'select'; options?: { value: string; label: string }[] })
   | (BaseFieldConfig & { type: 'switch' })
   | (BaseFieldConfig & { type: 'date' })
+  | (BaseFieldConfig & { type: 'file'; accept?: string; multiple?: boolean })
   | BaseFieldConfig; // No type = auto-infer
 
 // After resolving: guaranteed to have correct type and all properties
@@ -41,9 +43,11 @@ export type ResolvedFieldConfig =
   | (BaseFieldConfig & { type: 'text' })
   | (BaseFieldConfig & { type: 'textarea'; rows: number })
   | (BaseFieldConfig & { type: 'number'; min?: number; max?: number; step?: number })
+  | (BaseFieldConfig & { type: 'slider'; sliderMin: number; sliderMax: number; step?: number })
   | (BaseFieldConfig & { type: 'select'; options: { value: string; label: string }[] })
   | (BaseFieldConfig & { type: 'switch' })
-  | (BaseFieldConfig & { type: 'date' });
+  | (BaseFieldConfig & { type: 'date' })
+  | (BaseFieldConfig & { type: 'file'; accept?: string; multiple?: boolean });
 
 // Metadata is just FieldConfig without the name requirement
 export type FieldMetadata = Omit<FieldConfig, 'name'> & { name?: string };
@@ -55,7 +59,7 @@ export type FieldMetadata = Omit<FieldConfig, 'name'> & { name?: string };
 export interface ZodFormProps<T extends Record<string, any>> {
   schema: z.ZodObject<any>;
   fields: (string | FieldConfig)[];
-  initialValues: T;
+  initialValues?: Partial<T>;
   onSubmit: (values: T) => void;
   onCancel?: () => void;
   submitLabel?: string;
@@ -193,6 +197,15 @@ function mergeFieldConfig(
         step: 'step' in merged ? merged.step : undefined,
       };
     
+    case 'slider':
+      return {
+        ...base,
+        type: 'slider' as const,
+        sliderMin: ('sliderMin' in merged ? merged.sliderMin : undefined) ?? 0,
+        sliderMax: ('sliderMax' in merged ? merged.sliderMax : undefined) ?? 100,
+        step: ('step' in merged ? merged.step : undefined) ?? 1,
+      };
+    
     case 'select':
       return {
         ...base,
@@ -215,6 +228,14 @@ function mergeFieldConfig(
         type: 'date' as const,
       };
     
+    case 'file':
+      return {
+        ...base,
+        type: 'file' as const,
+        accept: 'accept' in merged ? merged.accept : undefined,
+        multiple: 'multiple' in merged ? merged.multiple : undefined,
+      };
+    
     case 'text':
     default:
       return {
@@ -227,13 +248,13 @@ function mergeFieldConfig(
 export function ZodForm<T extends Record<string, any>>({
   schema,
   fields,
-  initialValues,
+  initialValues = {} as Partial<T>,
   onSubmit,
   onCancel,
   submitLabel = 'Submit',
   cancelLabel = 'Cancel',
 }: ZodFormProps<T>) {
-  const form = useForm<T>({
+  const form = useForm({
     initialValues,
     validate: zod4Resolver(schema),
   });
@@ -283,6 +304,44 @@ export function ZodForm<T extends Record<string, any>>({
           />
         );
       
+      case 'slider':
+        return (
+          <Stack key={field.name} gap="xs">
+            {mergedConfig.label && (
+              <div>
+                <span style={{ fontSize: '14px', fontWeight: 500 }}>
+                  {mergedConfig.label}
+                  {mergedConfig.required && <span style={{ color: 'red' }}> *</span>}
+                </span>
+              </div>
+            )}
+            <Group gap="md" align="flex-start">
+              <Slider
+                style={{ flex: 1 }}
+                min={mergedConfig.sliderMin}
+                max={mergedConfig.sliderMax}
+                step={mergedConfig.step}
+                marks={[
+                  { value: mergedConfig.sliderMin, label: String(mergedConfig.sliderMin) },
+                  { value: mergedConfig.sliderMax, label: String(mergedConfig.sliderMax) },
+                ]}
+                {...form.getInputProps(field.name)}
+              />
+              <NumberInput
+                style={{ width: '120px' }}
+                step={mergedConfig.step}
+                placeholder={mergedConfig.placeholder}
+                {...form.getInputProps(field.name)}
+              />
+            </Group>
+            {mergedConfig.description && (
+              <div style={{ fontSize: '12px', color: '#868e96' }}>
+                {mergedConfig.description}
+              </div>
+            )}
+          </Stack>
+        );
+      
       case 'select':
         return (
           <Select
@@ -311,6 +370,16 @@ export function ZodForm<T extends Record<string, any>>({
           />
         );
       
+      case 'file':
+        return (
+          <FileInput
+            key={field.name}
+            {...commonProps}
+            accept={mergedConfig.accept}
+            multiple={mergedConfig.multiple}
+          />
+        );
+      
       case 'text':
       default:
         return (
@@ -323,7 +392,10 @@ export function ZodForm<T extends Record<string, any>>({
   };
 
   return (
-    <form onSubmit={form.onSubmit(onSubmit)}>
+    <form onSubmit={form.onSubmit((values) => {
+      // Zod validation ensures values match schema, so this cast is safe
+      onSubmit(values as T);
+    })}>
       <Stack gap="md">
         {fields.map(renderField)}
         

@@ -70,6 +70,7 @@ const newDatasetSchema = z.object({
   waferId: fieldRegistry.waferId,
   lotId: fieldRegistry.lotId,
   part: fieldRegistry.part,
+  confidence: fieldRegistry.confidence,
 });
 
 type NewDatasetFormValues = z.infer<typeof newDatasetSchema>;
@@ -404,15 +405,10 @@ export function DatasetPage() {
             'waferId',
             'lotId',
             'part',
+            'confidence',
           ]}
           initialValues={{
-            name: '',
-            description: '',
-            type: 'EBI' as const,
-            toolId: '',
-            waferId: '',
-            lotId: '',
-            part: '',
+            confidence: 0.5,
           }}
           onSubmit={handleCreateDataset}
           onCancel={() => setIsNewDatasetModalOpen(false)}
