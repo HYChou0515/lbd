@@ -313,6 +313,36 @@ export const fieldRegistry = {
       label: "Public",
       description: "Make this item publicly visible"
     })),
+
+  // Discriminated Unions
+  dataSourceUpload: z.discriminatedUnion('uploadMethod', [
+    z.object({
+      uploadMethod: z.literal('file'),
+      file: z.instanceof(File)
+        .refine(file => file.size <= 10 * 1024 * 1024, 'File must be ≤10MB')
+        .describe(JSON.stringify({
+          type: "file",
+          label: "Upload File",
+          accept: ".csv,.txt,.json",
+          description: "Upload a file from your computer"
+        })),
+    }),
+    z.object({
+      uploadMethod: z.literal('s3url'),
+      s3url: z.url({ protocol: /^s3$/ })
+        .regex(/^s3:\/\/[a-zA-Z0-9.\-_]+\/[a-zA-Z0-9\/.\-_]*$/, "必須是有效的 S3 URL 格式")
+        .describe(JSON.stringify({
+          type: "s3url",
+          label: "S3 URL",
+          buckets: ["my-bucket", "data-bucket", "upload-bucket"],
+          allowCustomBucket: true,
+          description: "Provide an S3 URL to your data"
+        })),
+    }),
+  ]).describe(JSON.stringify({
+    label: "Data Source",
+    description: "Choose how you want to provide your data"
+  })),
 } as const;
 
 // Type definitions for metadata customization
@@ -398,3 +428,4 @@ export function customizeField<T extends z.ZodTypeAny>(
   const mergedMetadata = { ...currentMetadata, ...customMetadata };
   return field.describe(JSON.stringify(mergedMetadata)) as T;
 }
+

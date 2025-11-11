@@ -1,6 +1,6 @@
 import { useForm } from '@mantine/form';
 import { zod4Resolver } from 'mantine-form-zod-resolver';
-import { Button, Stack, TextInput, Textarea, Select, NumberInput, Switch, Group, FileInput, Slider, Combobox, useCombobox, Input, InputBase, Box, Text, ActionIcon, Paper, TagsInput } from '@mantine/core';
+import { Button, Stack, TextInput, Textarea, Select, NumberInput, Switch, Group, FileInput, Slider, Combobox, useCombobox, Input, InputBase, Box, Text, ActionIcon, Paper, TagsInput, Radio } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
 import { IconPlus, IconTrash } from '@tabler/icons-react';
 import { z } from 'zod';
@@ -111,6 +111,12 @@ function getMetadata(zodType: any): FieldMetadata {
     return getMetadata(def.innerType);
   }
   
+  // For discriminated union, check if there's metadata on the union itself
+  if (def?.type === 'union' && def?.discriminator) {
+    // The metadata should be on the union type itself
+    return {};
+  }
+  
   return {};
 }
 
@@ -169,6 +175,59 @@ function formatLabel(name: string): string {
     .replace(/([A-Z])/g, ' $1') // Add space before capital letters
     .replace(/^./, str => str.toUpperCase()) // Capitalize first letter
     .trim();
+}
+
+// Helper to detect and extract discriminated union info
+interface DiscriminatedUnionInfo {
+  discriminatorKey: string;
+  options: Array<{
+    value: string;
+    label: string;
+    schema: z.ZodObject<any>;
+  }>;
+}
+
+function getDiscriminatedUnionInfo(zodType: any): DiscriminatedUnionInfo | null {
+  if (!zodType) return null;
+  
+  let currentType = zodType;
+  let def = currentType?.def;
+  
+  // Unwrap optional/default
+  while (def?.type === 'optional' || def?.type === 'default') {
+    currentType = def.innerType;
+    def = currentType?.def;
+  }
+  
+  // Check if this is a discriminated union
+  // In Zod v4, discriminated unions have type 'union' with a discriminator property
+  if (def?.type === 'union' && def?.discriminator) {
+    const discriminator = def.discriminator;
+    // In Zod v4, it's 'options' not 'optionsMap'
+    const options = def.options;
+    
+    if (discriminator && options && Array.isArray(options)) {
+      const optionsList = options.map((schema: any) => {
+        // Each option is a ZodObject, get the discriminator value from its shape
+        // The discriminator field is a ZodLiteral, which has values array in _def
+        const discriminatorField = schema.shape?.[discriminator];
+        const discriminatorValue = discriminatorField?.def?.values?.[0] || discriminatorField?._def?.value;
+        
+        return {
+          value: discriminatorValue as string,
+          label: discriminatorValue ? formatLabel(discriminatorValue as string) : 'Unknown',
+          schema,
+        };
+      });
+      
+      return {
+        discriminatorKey: discriminator,
+        options: optionsList,
+      };
+    }
+  }
+  
+  return null;
 }
 
 // ============================================================================
@@ -870,6 +929,84 @@ export function ZodForm<T extends Record<string, any>>({
     validate: zod4Resolver(schema),
   });
 
+  // Detect discriminated unions in the schema
+  const discriminatedUnions = new Map<string, DiscriminatedUnionInfo>();
+  const schemaShape = schema.shape;
+  
+  for (const fieldName in schemaShape) {
+    const zodType = schemaShape[fieldName];
+    const unionInfo = getDiscriminatedUnionInfo(zodType);
+    if (unionInfo) {
+      discriminatedUnions.set(fieldName, unionInfo);
+    }
+  }
+
+  // Render a discriminated union field as a Radio group + conditional fields
+  const renderDiscriminatedUnionField = (field: FieldConfig, unionInfo: DiscriminatedUnionInfo) => {
+    const discriminatorValue = form.values[field.name]?.[unionInfo.discriminatorKey] ?? '';
+    
+    // Find the selected option schema
+    const selectedOption = unionInfo.options.find(opt => opt.value === discriminatorValue);
+    
+    // Get all field names from the selected option (excluding discriminator)
+    const selectedSchema = selectedOption?.schema;
+    const selectedFields = selectedSchema?.shape 
+      ? Object.keys(selectedSchema.shape).filter(key => key !== unionInfo.discriminatorKey)
+      : [];
+    
+    return (
+      <Stack key={field.name} gap="md">
+        {/* Discriminator field - Radio group */}
+        <Radio.Group
+          label={field.label || formatLabel(field.name)}
+          description={field.description}
+          value={discriminatorValue}
+          onChange={(value) => {
+            // Find the option schema for the selected value
+            const option = unionInfo.options.find(opt => opt.value === value);
+            if (option) {
+              // Initialize with discriminator value
+              // Type assertion is necessary here because we're dynamically setting form values
+              // The actual type safety is enforced by Zod validation
+              form.setFieldValue(field.name, { [unionInfo.discriminatorKey]: value } as never);
+            }
+          }}
+        >
+          <Group gap="xs" mt="xs">
+            {unionInfo.options.map(option => (
+              <Radio key={option.value} value={option.value} label={option.label} />
+            ))}
+          </Group>
+        </Radio.Group>
+
+        {/* Conditional fields based on discriminator value */}
+        {selectedOption && selectedSchema && selectedFields.length > 0 && (
+          <Box pl="md" style={{ borderLeft: '2px solid #e9ecef' }}>
+            <Stack gap="md">
+              {selectedFields.map(fieldName => {
+                const fieldZodType = selectedSchema.shape[fieldName];
+                const fieldMetadata = getMetadata(fieldZodType);
+                const fieldType = ('type' in fieldMetadata ? fieldMetadata.type : undefined) || inferFieldType(fieldZodType);
+                
+                // Create a nested field config
+                const nestedFieldConfig: FieldConfig = {
+                  name: `${field.name}.${fieldName}`,
+                  label: fieldMetadata.label || formatLabel(fieldName),
+                  placeholder: fieldMetadata.placeholder,
+                  description: fieldMetadata.description,
+                  type: fieldType,
+                  ...fieldMetadata,
+                } as FieldConfig;
+                
+                return renderField(nestedFieldConfig);
+              })}
+            </Stack>
+          </Box>
+        )}
+      </Stack>
+    );
+  };
+
   const renderField = (fieldConfig: string | FieldConfig) => {
     // Convert string to field config
     const field: FieldConfig = typeof fieldConfig === 'string' 
@@ -877,8 +1014,21 @@ export function ZodForm<T extends Record<string, any>>({
       : fieldConfig;
 
     // Get the Zod type for this field
-    const schemaShape = schema.shape;
     const zodType = schemaShape?.[field.name];
+    
+    // Check if this field is a discriminated union
+    const unionInfo = discriminatedUnions.get(field.name);
+    
+    if (unionInfo) {
+      // Get metadata from the union for label/description
+      const metadata = getMetadata(zodType);
+      const fieldWithMetadata = {
+        ...field,
+        label: field.label || metadata.label || formatLabel(field.name),
+        description: field.description || metadata.description,
+      };
+      return renderDiscriminatedUnionField(fieldWithMetadata, unionInfo);
+    }
     
     // Get metadata from Zod
     const metadata = getMetadata(zodType);
@@ -893,6 +1043,7 @@ export function ZodForm<T extends Record<string, any>>({
       description: mergedConfig.description,
       ...form.getInputProps(field.name),
     };
+
     
     switch (mergedConfig.type) {
       case 'textarea':

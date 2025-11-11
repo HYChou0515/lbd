@@ -71,7 +71,7 @@ const newDatasetSchema = z.object({
   lotId: fieldRegistry.lotId,
   part: fieldRegistry.part,
   confidence: fieldRegistry.confidence,
-  csvUrl: fieldRegistry.s3Url,
+  dataSource: fieldRegistry.dataSourceUpload, // Discriminated union: file or s3url
   git: fieldRegistry.gitUrl,
   readme: fieldRegistry.readme,
   tags: fieldRegistry.tags,
@@ -399,6 +399,8 @@ export function DatasetPage() {
         onClose={() => setIsNewDatasetModalOpen(false)}
         title="Create New Dataset"
         size="lg"
+        closeOnClickOutside={false}
+        closeOnEscape={false}
       >
         <ZodForm
           schema={newDatasetSchema}
@@ -411,7 +413,7 @@ export function DatasetPage() {
             'lotId',
             'part',
             'confidence',
-            'csvUrl',
+            'dataSource', // Discriminated union: file or s3url
             'git',
             'tags',
             'keywords',
