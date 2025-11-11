@@ -155,6 +155,64 @@ export const fieldRegistry = {
       description: "支援 git@gitlab.com:user/repo.git 或 https://gitlab.com/user/repo 格式"
     })),
 
+  // Markdown fields
+  readme: z.string()
+    .min(1, "README cannot be empty")
+    .describe(JSON.stringify({
+      type: "markdown",
+      label: "README",
+      height: 500,
+      placeholder: "Write your README in Markdown",
+      description: "支援 Markdown 語法，可切換預覽模式"
+    })),
+
+  documentation: z.string()
+    .optional()
+    .describe(JSON.stringify({
+      type: "markdown",
+      label: "Documentation",
+      height: 400,
+      placeholder: "Write documentation in Markdown (optional)",
+      description: "詳細的文件說明"
+    })),
+
+  notes: z.string()
+    .optional()
+    .describe(JSON.stringify({
+      type: "markdown",
+      label: "Notes",
+      height: 300,
+      placeholder: "Add notes in Markdown (optional)"
+    })),
+
+  // Array fields
+  tags: z.array(z.string())
+    .min(1, "At least one tag is required")
+    .describe(JSON.stringify({
+      type: "tags",
+      label: "Tags",
+      maxTags: 10,
+      splitChars: [',', ' ', 'Enter'],
+      description: "Add tags to categorize this item (press Enter, comma, or space to add)"
+    })),
+
+  keywords: z.array(z.string())
+    .optional()
+    .describe(JSON.stringify({
+      type: "tags",
+      label: "Keywords",
+      description: "Optional keywords for search (press Enter, comma, or space to add)"
+    })),
+
+  scores: z.array(z.number())
+    .optional()
+    .describe(JSON.stringify({
+      type: "array",
+      label: "Scores",
+      itemType: "number",
+      description: "List of numeric scores"
+    })),
+
   // User fields
   email: z.email("Invalid email address")
     .describe(JSON.stringify({ 

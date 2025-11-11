@@ -73,6 +73,9 @@ const newDatasetSchema = z.object({
   confidence: fieldRegistry.confidence,
   csvUrl: fieldRegistry.s3Url,
   git: fieldRegistry.gitUrl,
+  readme: fieldRegistry.readme,
+  tags: fieldRegistry.tags,
+  keywords: fieldRegistry.keywords,
 });
 
 type NewDatasetFormValues = z.infer<typeof newDatasetSchema>;
@@ -410,9 +413,14 @@ export function DatasetPage() {
             'confidence',
             'csvUrl',
             'git',
+            'tags',
+            'keywords',
+            'readme',
           ]}
           initialValues={{
             confidence: 0.5,
+            tags: [],
+            keywords: [],
           }}
           onSubmit={handleCreateDataset}
           onCancel={() => setIsNewDatasetModalOpen(false)}

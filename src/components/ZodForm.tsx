@@ -1,9 +1,13 @@
 import { useForm } from '@mantine/form';
 import { zod4Resolver } from 'mantine-form-zod-resolver';
-import { Button, Stack, TextInput, Textarea, Select, NumberInput, Switch, Group, FileInput, Slider, Combobox, useCombobox, Input, InputBase } from '@mantine/core';
+import { Button, Stack, TextInput, Textarea, Select, NumberInput, Switch, Group, FileInput, Slider, Combobox, useCombobox, Input, InputBase, Box, Text, ActionIcon, Paper, TagsInput } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
+import { IconPlus, IconTrash } from '@tabler/icons-react';
 import { z } from 'zod';
 import { useState, useEffect } from 'react';
+import Editor from '@monaco-editor/react';
+import MarkdownPreview from '@uiw/react-markdown-preview';
+import '../styles/markdown-preview.css';
 
 
 // ============================================================================
@@ -39,6 +43,9 @@ export type FieldConfig =
   | (BaseFieldConfig & { type: 'file'; accept?: string; multiple?: boolean })
   | (BaseFieldConfig & { type: 's3url'; buckets?: string[]; allowCustomBucket?: boolean })
   | (BaseFieldConfig & { type: 'giturl'; platforms?: ('github' | 'gitlab')[]; })
+  | (BaseFieldConfig & { type: 'markdown'; height?: number; })
+  | (BaseFieldConfig & { type: 'tags'; maxTags?: number; splitChars?: string[]; })
+  | (BaseFieldConfig & { type: 'array'; itemType?: 'text' | 'number'; minItems?: number; maxItems?: number; })
   | BaseFieldConfig; // No type = auto-infer
 
 // After resolving: guaranteed to have correct type and all properties
@@ -52,7 +59,10 @@ export type ResolvedFieldConfig =
   | (BaseFieldConfig & { type: 'date' })
   | (BaseFieldConfig & { type: 'file'; accept?: string; multiple?: boolean })
   | (BaseFieldConfig & { type: 's3url'; buckets: string[]; allowCustomBucket: boolean })
-  | (BaseFieldConfig & { type: 'giturl'; platforms: ('github' | 'gitlab')[]; });
+  | (BaseFieldConfig & { type: 'giturl'; platforms: ('github' | 'gitlab')[]; })
+  | (BaseFieldConfig & { type: 'markdown'; height: number; })
+  | (BaseFieldConfig & { type: 'tags'; maxTags?: number; splitChars: string[]; })
+  | (BaseFieldConfig & { type: 'array'; itemType: 'text' | 'number'; minItems?: number; maxItems?: number; });
 
 // Metadata is just FieldConfig without the name requirement
 export type FieldMetadata = Omit<FieldConfig, 'name'> & { name?: string };
@@ -105,7 +115,7 @@ function getMetadata(zodType: any): FieldMetadata {
 }
 
 // Helper to infer field type from Zod schema
-function inferFieldType(zodType: any): 'text' | 'textarea' | 'number' | 'select' | 'switch' | 'date' {
+function inferFieldType(zodType: any): 'text' | 'textarea' | 'number' | 'select' | 'switch' | 'date' | 'array' {
   const def = zodType?.def;
   const typeName = def?.type;
   
@@ -113,6 +123,7 @@ function inferFieldType(zodType: any): 'text' | 'textarea' | 'number' | 'select'
   if (typeName === 'boolean') return 'switch';
   if (typeName === 'date') return 'date';
   if (typeName === 'enum') return 'select';
+  if (typeName === 'array') return 'array';
   
   // For ZodOptional or ZodDefault, check the inner type
   if (typeName === 'optional' || typeName === 'default') {
@@ -498,6 +509,208 @@ function GitUrlField({ config, form }: GitUrlFieldProps) {
 }
 
 // ============================================================================
+// Markdown Field Component
+// ============================================================================
+
+interface MarkdownFieldProps {
+  config: ResolvedFieldConfig & { type: 'markdown'; height: number } & { required: boolean };
+  form: any;
+}
+
+function MarkdownField({ config, form }: MarkdownFieldProps) {
+  const [isPreview, setIsPreview] = useState(false);
+  const content = form.values[config.name] || '';
+
+  return (
+    <Stack gap="xs">
+      {/* Label and Toggle */}
+      <Group justify="space-between" wrap="nowrap">
+        <div>
+          <span style={{ fontSize: '14px', fontWeight: 500 }}>
+            {config.label}
+            {config.required && <span style={{ color: 'red' }}> *</span>}
+          </span>
+          {config.description && (
+            <div style={{ fontSize: '12px', color: '#868e96', marginTop: '4px' }}>
+              {config.description}
+            </div>
+          )}
+        </div>
+        <Group gap="xs">
+          <Button
+            size="xs"
+            variant={isPreview ? 'subtle' : 'light'}
+            onClick={() => setIsPreview(false)}
+          >
+            Edit
+          </Button>
+          <Button
+            size="xs"
+            variant={isPreview ? 'light' : 'subtle'}
+            onClick={() => setIsPreview(true)}
+          >
+            Preview
+          </Button>
+        </Group>
+      </Group>
+
+      {/* Editor or Preview */}
+      <Box
+        style={{
+          border: form.errors[config.name] ? '1px solid var(--mantine-color-red-6)' : '1px solid var(--mantine-color-gray-4)',
+          borderRadius: '4px',
+          overflow: 'hidden',
+        }}
+      >
+        {isPreview ? (
+          <Box style={{ height: config.height, overflow: 'auto', padding: '1rem' }}>
+            <MarkdownPreview
+              source={content || '*No content*'}
+              style={{
+                width: '100%',
+                maxWidth: 'none',
+                minWidth: 0,
+              }}
+              wrapperElement={{
+                'data-color-mode': 'light'
+              }}
+            />
+          </Box>
+        ) : (
+          <Editor
+            height={config.height}
+            language="markdown"
+            value={content}
+            onChange={(value) => form.setFieldValue(config.name, value || '')}
+            theme="vs-dark"
+            options={{
+              minimap: { enabled: true },
+              scrollBeyondLastLine: false,
+              fontSize: 14,
+              wordWrap: 'on',
+              automaticLayout: true,
+              lineNumbers: 'on',
+              renderLineHighlight: 'all',
+            }}
+          />
+        )}
+      </Box>
+
+      {/* Error Message */}
+      {form.errors[config.name] && (
+        <Text size="xs" c="red">
+          {form.errors[config.name]}
+        </Text>
+      )}
+    </Stack>
+  );
+}
+
+// ============================================================================
+// Array Field Component
+// ============================================================================
+
+interface ArrayFieldProps {
+  config: ResolvedFieldConfig & { type: 'array'; itemType: 'text' | 'number'; minItems?: number; maxItems?: number } & { required: boolean };
+  form: any;
+}
+
+function ArrayField({ config, form }: ArrayFieldProps) {
+  const items = (form.values[config.name] as any[]) || [];
+
+  const handleAdd = () => {
+    const newValue = config.itemType === 'number' ? 0 : '';
+    form.setFieldValue(config.name, [...items, newValue]);
+  };
+
+  const handleRemove = (index: number) => {
+    const newItems = items.filter((_, i) => i !== index);
+    form.setFieldValue(config.name, newItems);
+  };
+
+  const handleChange = (index: number, value: any) => {
+    const newItems = [...items];
+    newItems[index] = value;
+    form.setFieldValue(config.name, newItems);
+  };
+
+  const canAdd = !config.maxItems || items.length < config.maxItems;
+  const canRemove = !config.minItems || items.length > config.minItems;
+
+  return (
+    <Stack gap="xs">
+      <Group justify="space-between" wrap="nowrap">
+        <div>
+          <span style={{ fontSize: '14px', fontWeight: 500 }}>
+            {config.label}
+            {config.required && <span style={{ color: 'red' }}> *</span>}
+          </span>
+          {config.description && (
+            <div style={{ fontSize: '12px', color: '#868e96', marginTop: '4px' }}>
+              {config.description}
+            </div>
+          )}
+        </div>
+        <Button
+          size="xs"
+          leftSection={<IconPlus size={14} />}
+          onClick={handleAdd}
+          disabled={!canAdd}
+        >
+          Add Item
+        </Button>
+      </Group>
+
+      <Stack gap="xs">
+        {items.map((item, index) => (
+          <Paper key={index} p="xs" withBorder>
+            <Group gap="xs" wrap="nowrap">
+              <Text size="xs" c="dimmed" style={{ width: '30px' }}>
+                {index + 1}.
+              </Text>
+              {config.itemType === 'number' ? (
+                <NumberInput
+                  value={item}
+                  onChange={(value) => handleChange(index, value)}
+                  style={{ flex: 1 }}
+                />
+              ) : (
+                <TextInput
+                  value={item}
+                  onChange={(e) => handleChange(index, e.currentTarget.value)}
+                  style={{ flex: 1 }}
+                />
+              )}
+              <ActionIcon
+                color="red"
+                variant="subtle"
+                onClick={() => handleRemove(index)}
+                disabled={!canRemove}
+              >
+                <IconTrash size={16} />
+              </ActionIcon>
+            </Group>
+          </Paper>
+        ))}
+        
+        {items.length === 0 && (
+          <Text size="sm" c="dimmed" ta="center" py="md">
+            No items. Click "Add Item" to add one.
+          </Text>
+        )}
+      </Stack>
+
+      {/* Error Message */}
+      {form.errors[config.name] && (
+        <Text size="xs" c="red">
+          {form.errors[config.name]}
+        </Text>
+      )}
+    </Stack>
+  );
+}
+
+// ============================================================================
 // Helper Functions (continued)
 // ============================================================================
 
@@ -595,6 +808,43 @@ function mergeFieldConfig(
         ...base,
         type: 'giturl' as const,
         platforms: ('platforms' in merged ? merged.platforms : undefined) ?? ['github', 'gitlab'],
+      };
+    
+    case 'markdown':
+      return {
+        ...base,
+        type: 'markdown' as const,
+        height: ('height' in merged ? merged.height : undefined) ?? 400,
+      };
+    
+    case 'array': {
+      // Detect item type from Zod array schema
+      const arrayDef = zodType?.def;
+      let itemZodType = arrayDef?.innerType || arrayDef?.type;
+      
+      // Unwrap optional/default if needed
+      while (itemZodType?.def?.type === 'optional' || itemZodType?.def?.type === 'default') {
+        itemZodType = itemZodType.def.innerType;
+      }
+      
+      const itemTypeName = itemZodType?.def?.type;
+      const detectedItemType = itemTypeName === 'number' ? 'number' : 'text';
+      
+      return {
+        ...base,
+        type: 'array' as const,
+        itemType: ('itemType' in merged ? merged.itemType : undefined) ?? detectedItemType,
+        minItems: 'minItems' in merged ? merged.minItems : undefined,
+        maxItems: 'maxItems' in merged ? merged.maxItems : undefined,
+      };
+    }
+    
+    case 'tags':
+      return {
+        ...base,
+        type: 'tags' as const,
+        maxTags: 'maxTags' in merged ? merged.maxTags : undefined,
+        splitChars: ('splitChars' in merged ? merged.splitChars : undefined) ?? [',', ' '],
       };
     
     case 'text':
@@ -746,6 +996,22 @@ export function ZodForm<T extends Record<string, any>>({
       
       case 'giturl':
         return <GitUrlField key={field.name} config={mergedConfig} form={form} />;
+      
+      case 'markdown':
+        return <MarkdownField key={field.name} config={mergedConfig} form={form} />;
+      
+      case 'array':
+        return <ArrayField key={field.name} config={mergedConfig} form={form} />;
+      
+      case 'tags':
+        return (
+          <TagsInput
+            key={field.name}
+            {...commonProps}
+            maxTags={mergedConfig.maxTags}
+            splitChars={mergedConfig.splitChars}
+          />
+        );
       
       case 'text':
       default:
