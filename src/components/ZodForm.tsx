@@ -23,15 +23,27 @@ interface BaseField {
   description?: string;
 }
 
-// Field config types (used for both metadata and user API)
+// Base field config without type (for auto-inference)
+type BaseFieldConfig = { name: string } & BaseField;
+
+// User input: may not have type (auto-infer from Zod schema)
 export type FieldConfig =
-  | ({ name: string } & BaseField & { type?: 'text' })
-  | ({ name: string } & BaseField & { type: 'textarea'; rows?: number })
-  | ({ name: string } & BaseField & { type: 'number'; min?: number; max?: number; step?: number })
-  | ({ name: string } & BaseField & { type: 'select'; options?: { value: string; label: string }[] })
-  | ({ name: string } & BaseField & { type: 'switch' })
-  | ({ name: string } & BaseField & { type: 'date' })
-  | ({ name: string } & BaseField); // No type = auto-infer
+  | (BaseFieldConfig & { type: 'text' })
+  | (BaseFieldConfig & { type: 'textarea'; rows?: number })
+  | (BaseFieldConfig & { type: 'number'; min?: number; max?: number; step?: number })
+  | (BaseFieldConfig & { type: 'select'; options?: { value: string; label: string }[] })
+  | (BaseFieldConfig & { type: 'switch' })
+  | (BaseFieldConfig & { type: 'date' })
+  | BaseFieldConfig; // No type = auto-infer
+
+// After resolving: guaranteed to have correct type and all properties
+export type ResolvedFieldConfig =
+  | (BaseFieldConfig & { type: 'text' })
+  | (BaseFieldConfig & { type: 'textarea'; rows: number })
+  | (BaseFieldConfig & { type: 'number'; min?: number; max?: number; step?: number })
+  | (BaseFieldConfig & { type: 'select'; options: { value: string; label: string }[] })
+  | (BaseFieldConfig & { type: 'switch' })
+  | (BaseFieldConfig & { type: 'date' });
 
 // Metadata is just FieldConfig without the name requirement
 export type FieldMetadata = Omit<FieldConfig, 'name'> & { name?: string };
@@ -144,100 +156,71 @@ function mergeFieldConfig(
   field: FieldConfig,
   metadata: FieldMetadata,
   zodType: any
-): FieldConfig & { required: boolean } {
-  // Determine the final type - use 'in' operator for type narrowing
-  const finalType = 
-    ('type' in field && field.type) || 
-    ('type' in metadata && metadata.type) || 
-    inferFieldType(zodType);
+): ResolvedFieldConfig & { required: boolean } {
+  // Merge metadata and field (field takes precedence), with inferred type as fallback
+  const merged = { 
+    type: inferFieldType(zodType),
+    ...metadata, 
+    ...field 
+  };
   
   // Common properties
-  const name = field.name;
-  const label = field.label || metadata.label || formatLabel(name);
-  const required = isFieldRequired(zodType);
-  const placeholder = field.placeholder || metadata.placeholder;
-  const description = field.description || metadata.description;
+  const base = {
+    name: merged.name,
+    label: merged.label || formatLabel(merged.name),
+    required: isFieldRequired(zodType),
+    placeholder: merged.placeholder,
+    description: merged.description,
+  };
   
-  // Build config based on type
-  switch (finalType) {
-    case 'textarea': {
-      const fieldRows = 'rows' in field && typeof field.rows === 'number' ? field.rows : undefined;
-      const metadataRows = 'rows' in metadata && typeof metadata.rows === 'number' ? metadata.rows : undefined;
+  // Build config based on type (type is guaranteed to exist from spread)
+  const type = ('type' in merged && merged.type) || 'text';
+  
+  switch (type) {
+    case 'textarea':
       return {
+        ...base,
         type: 'textarea' as const,
-        name,
-        label,
-        required,
-        placeholder,
-        description,
-        rows: fieldRows ?? metadataRows ?? 3,
+        rows: ('rows' in merged ? merged.rows : undefined) ?? 3,
       };
-    }
     
-    case 'number': {
-      const min = 'min' in metadata && typeof metadata.min === 'number' ? metadata.min : undefined;
-      const max = 'max' in metadata && typeof metadata.max === 'number' ? metadata.max : undefined;
-      const step = 'step' in metadata && typeof metadata.step === 'number' ? metadata.step : undefined;
+    case 'number':
       return {
+        ...base,
         type: 'number' as const,
-        name,
-        label,
-        required,
-        placeholder,
-        description,
-        min,
-        max,
-        step,
+        min: 'min' in merged ? merged.min : undefined,
+        max: 'max' in merged ? merged.max : undefined,
+        step: 'step' in merged ? merged.step : undefined,
       };
-    }
     
-    case 'select': {
-      const fieldOptions = 'options' in field && Array.isArray(field.options) ? field.options : undefined;
-      const metadataOptions = 'options' in metadata && Array.isArray(metadata.options) ? metadata.options : undefined;
-      const options = fieldOptions ?? metadataOptions ?? getEnumOptions(zodType) ?? [];
+    case 'select':
       return {
+        ...base,
         type: 'select' as const,
-        name,
-        label,
-        required,
-        placeholder,
-        description,
-        options,
+        options: ('options' in merged ? merged.options : undefined) ?? getEnumOptions(zodType) ?? [],
       };
-    }
     
-    case 'switch': {
+    case 'switch':
       return {
         type: 'switch' as const,
-        name,
-        label,
-        required,
-        description,
+        name: base.name,
+        label: base.label,
+        required: base.required,
+        description: base.description,
       };
-    }
     
-    case 'date': {
+    case 'date':
       return {
+        ...base,
         type: 'date' as const,
-        name,
-        label,
-        required,
-        placeholder,
-        description,
       };
-    }
     
     case 'text':
-    default: {
+    default:
       return {
+        ...base,
         type: 'text' as const,
-        name,
-        label,
-        required,
-        placeholder,
-        description,
       };
-    }
   }
 }
 
@@ -273,21 +256,19 @@ export function ZodForm<T extends Record<string, any>>({
     
     const commonProps = {
       label: mergedConfig.label,
-      placeholder: 'placeholder' in mergedConfig ? mergedConfig.placeholder : undefined,
+      placeholder: mergedConfig.placeholder,
       required: mergedConfig.required,
       description: mergedConfig.description,
       ...form.getInputProps(field.name),
     };
-
-    const type = 'type' in mergedConfig ? mergedConfig.type : 'text';
     
-    switch (type) {
+    switch (mergedConfig.type) {
       case 'textarea':
         return (
           <Textarea
             key={field.name}
             {...commonProps}
-            minRows={'rows' in mergedConfig ? mergedConfig.rows : 3}
+            minRows={mergedConfig.rows}
           />
         );
       
@@ -296,9 +277,9 @@ export function ZodForm<T extends Record<string, any>>({
           <NumberInput
             key={field.name}
             {...commonProps}
-            min={'min' in mergedConfig ? mergedConfig.min : undefined}
-            max={'max' in mergedConfig ? mergedConfig.max : undefined}
-            step={'step' in mergedConfig ? mergedConfig.step : undefined}
+            min={mergedConfig.min}
+            max={mergedConfig.max}
+            step={mergedConfig.step}
           />
         );
       
@@ -307,7 +288,7 @@ export function ZodForm<T extends Record<string, any>>({
           <Select
             key={field.name}
             {...commonProps}
-            data={'options' in mergedConfig ? mergedConfig.options || [] : []}
+            data={mergedConfig.options}
             searchable
           />
         );
