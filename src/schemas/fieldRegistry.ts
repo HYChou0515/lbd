@@ -98,6 +98,30 @@ export const fieldRegistry = {
       placeholder: "Upload a CSV file"
     })),
 
+  // S3 URL fields
+  s3Url: z.url({ protocol: /^s3$/ })
+    .regex(/^s3:\/\/[a-zA-Z0-9.\-_]+\/[a-zA-Z0-9\/.\-_]*$/, "必須是有效的 S3 URL 格式")
+    .describe(JSON.stringify({
+      type: "s3url",
+      label: "S3 URL",
+      buckets: ["foo", "bar"],
+      allowCustomBucket: true,
+      placeholder: "輸入路徑或貼上完整 S3 URL",
+      description: "選擇預設 bucket 或輸入自訂 bucket，也可以直接貼上完整 S3 URL"
+    })),
+
+  datasetS3Url: z.url({ protocol: /^s3$/ })
+    .regex(/^s3:\/\/[a-zA-Z0-9.\-_]+\/[a-zA-Z0-9\/.\-_]*$/, "必須是有效的 S3 URL 格式")
+    .describe(JSON.stringify({
+      type: "s3url",
+      label: "Dataset Location",
+      buckets: ["prod-datasets", "staging-datasets", "dev-datasets"],
+      allowCustomBucket: false,
+      placeholder: "輸入資料集路徑",
+      description: "選擇資料集儲存位置"
+      
+    })),
+
   // User fields
   email: z.email("Invalid email address")
     .describe(JSON.stringify({ 

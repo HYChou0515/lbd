@@ -1,8 +1,9 @@
 import { useForm } from '@mantine/form';
 import { zod4Resolver } from 'mantine-form-zod-resolver';
-import { Button, Stack, TextInput, Textarea, Select, NumberInput, Switch, Group, FileInput, Slider } from '@mantine/core';
+import { Button, Stack, TextInput, Textarea, Select, NumberInput, Switch, Group, FileInput, Slider, Combobox, useCombobox, Input, InputBase } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
 import { z } from 'zod';
+import { useState, useEffect } from 'react';
 
 
 // ============================================================================
@@ -36,6 +37,7 @@ export type FieldConfig =
   | (BaseFieldConfig & { type: 'switch' })
   | (BaseFieldConfig & { type: 'date' })
   | (BaseFieldConfig & { type: 'file'; accept?: string; multiple?: boolean })
+  | (BaseFieldConfig & { type: 's3url'; buckets?: string[]; allowCustomBucket?: boolean })
   | BaseFieldConfig; // No type = auto-infer
 
 // After resolving: guaranteed to have correct type and all properties
@@ -47,7 +49,8 @@ export type ResolvedFieldConfig =
   | (BaseFieldConfig & { type: 'select'; options: { value: string; label: string }[] })
   | (BaseFieldConfig & { type: 'switch' })
   | (BaseFieldConfig & { type: 'date' })
-  | (BaseFieldConfig & { type: 'file'; accept?: string; multiple?: boolean });
+  | (BaseFieldConfig & { type: 'file'; accept?: string; multiple?: boolean })
+  | (BaseFieldConfig & { type: 's3url'; buckets: string[]; allowCustomBucket: boolean });
 
 // Metadata is just FieldConfig without the name requirement
 export type FieldMetadata = Omit<FieldConfig, 'name'> & { name?: string };
@@ -155,6 +158,219 @@ function formatLabel(name: string): string {
     .trim();
 }
 
+// ============================================================================
+// S3 URL Field Component
+// ============================================================================
+
+interface S3UrlFieldProps {
+  config: ResolvedFieldConfig & { type: 's3url'; buckets: string[]; allowCustomBucket: boolean } & { required: boolean };
+  form: any;
+}
+
+function S3UrlField({ config, form }: S3UrlFieldProps) {
+  const combobox = useCombobox({
+    onDropdownClose: () => combobox.resetSelectedOption(),
+  });
+
+  const [bucket, setBucket] = useState<string>('');
+  const [path, setPath] = useState<string>('');
+  const [searchValue, setSearchValue] = useState<string>('');
+
+  // Parse S3 URL: s3://bucket/path/to/file
+  const parseS3Url = (url: string): { bucket: string; path: string } => {
+    if (!url) return { bucket: '', path: '' };
+    
+    const s3Match = url.match(/^s3:\/\/([^\/]+)\/?(.*)/);
+    if (s3Match) {
+      return { bucket: s3Match[1], path: s3Match[2] || '' };
+    }
+    
+    return { bucket: '', path: url };
+  };
+
+  // Build S3 URL from bucket and path
+  const buildS3Url = (bucket: string, path: string): string => {
+    if (!bucket) return path;
+    const cleanPath = path.startsWith('/') ? path.slice(1) : path;
+    return `s3://${bucket}/${cleanPath}`;
+  };
+
+  // Initialize from form value
+  useEffect(() => {
+    const currentValue = form.values[config.name] || '';
+    if (currentValue) {
+      const parsed = parseS3Url(currentValue);
+      setBucket(parsed.bucket);
+      setPath(parsed.path);
+      setSearchValue(parsed.bucket);
+    }
+  }, []);
+
+  // Update form value when bucket or path changes
+  useEffect(() => {
+    const s3Url = buildS3Url(bucket, path);
+    if (s3Url !== form.values[config.name]) {
+      form.setFieldValue(config.name, s3Url);
+    }
+  }, [bucket, path]);
+
+  // Sync searchValue with bucket when bucket changes externally
+  useEffect(() => {
+    if (bucket && bucket !== searchValue) {
+      setSearchValue(bucket);
+    }
+  }, [bucket]);
+
+  // Handle paste in path field - auto-parse S3 URL
+  const handlePathPaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    const pastedText = e.clipboardData.getData('text');
+    const parsed = parseS3Url(pastedText);
+    
+    if (parsed.bucket) {
+      e.preventDefault();
+      setBucket(parsed.bucket);
+      setSearchValue(parsed.bucket);
+      setPath(parsed.path);
+    }
+  };
+
+  // Filter bucket options based on search
+  const filteredBuckets = config.buckets.filter((b) =>
+    b.toLowerCase().includes(searchValue.toLowerCase())
+  );
+
+  const shouldShowCustomOption = 
+    config.allowCustomBucket && 
+    searchValue && 
+    !config.buckets.includes(searchValue) &&
+    !filteredBuckets.length;
+
+  return (
+    <Stack gap="xs">
+      {config.label && (
+        <div>
+          <span style={{ fontSize: '14px', fontWeight: 500 }}>
+            {config.label}
+            {config.required && <span style={{ color: 'red' }}> *</span>}
+          </span>
+        </div>
+      )}
+      
+      <Group gap="md" align="flex-start" wrap="nowrap">
+        {/* Bucket Selector with Search */}
+        <Combobox
+          store={combobox}
+          onOptionSubmit={(val) => {
+            setBucket(val);
+            setSearchValue(val);
+            combobox.closeDropdown();
+          }}
+          withinPortal={false}
+        >
+          <Combobox.Target>
+            <InputBase
+              component="input"
+              type="text"
+              pointer
+              rightSection={<Combobox.Chevron />}
+              onClick={() => combobox.openDropdown()}
+              onFocus={() => combobox.openDropdown()}
+              onBlur={() => {
+                combobox.closeDropdown();
+                // When losing focus, if searchValue doesn't match bucket, update bucket
+                if (searchValue && searchValue !== bucket) {
+                  // If it's in the filtered list, use the first match
+                  if (filteredBuckets.length > 0 && filteredBuckets.includes(searchValue)) {
+                    setBucket(searchValue);
+                  } else if (config.allowCustomBucket) {
+                    // Use custom bucket
+                    setBucket(searchValue);
+                  } else if (filteredBuckets.length > 0) {
+                    // If not allowing custom, but there are matches, don't auto-select
+                    // Keep the bucket as is
+                  } else {
+                    // Reset to current bucket value
+                    setSearchValue(bucket);
+                  }
+                }
+              }}
+              value={searchValue}
+              onChange={(e) => {
+                const val = e.currentTarget.value;
+                setSearchValue(val);
+                // If user clears the input, also clear the bucket
+                if (!val) {
+                  setBucket('');
+                }
+                combobox.openDropdown();
+              }}
+              placeholder="選擇或輸入 bucket"
+              style={{ width: '250px' }}
+            />
+          </Combobox.Target>
+
+          <Combobox.Dropdown>
+            <Combobox.Options>
+              {filteredBuckets.map((b) => (
+                <Combobox.Option value={b} key={b} active={bucket === b}>
+                  {b}
+                </Combobox.Option>
+              ))}
+              {shouldShowCustomOption && (
+                <Combobox.Option value={searchValue} key="__custom__">
+                  使用自訂: <strong>{searchValue}</strong>
+                </Combobox.Option>
+              )}
+              {!filteredBuckets.length && !shouldShowCustomOption && searchValue && (
+                <Combobox.Empty>
+                  {config.allowCustomBucket ? '按 Enter 使用自訂 bucket' : '找不到符合的 bucket'}
+                </Combobox.Empty>
+              )}
+            </Combobox.Options>
+          </Combobox.Dropdown>
+        </Combobox>
+
+        {/* Path Input */}
+        <TextInput
+          placeholder={config.placeholder || "輸入 S3 路徑或貼上完整 S3 URL"}
+          value={path}
+          onChange={(e) => setPath(e.currentTarget.value)}
+          onPaste={handlePathPaste}
+          onKeyDown={(e) => {
+            // Allow Enter to confirm custom bucket name
+            if (e.key === 'Enter' && searchValue && config.allowCustomBucket) {
+              e.preventDefault();
+              setBucket(searchValue);
+              combobox.closeDropdown();
+            }
+          }}
+          style={{ flex: 1 }}
+          error={form.errors[config.name]}
+        />
+      </Group>
+
+      {/* Preview */}
+      {(bucket || path) && (
+        <Input.Wrapper>
+          <div style={{ fontSize: '12px', color: '#228be6', fontFamily: 'monospace' }}>
+            完整 URL: {buildS3Url(bucket, path) || '(請輸入路徑)'}
+          </div>
+        </Input.Wrapper>
+      )}
+
+      {config.description && (
+        <div style={{ fontSize: '12px', color: '#868e96' }}>
+          {config.description}
+        </div>
+      )}
+    </Stack>
+  );
+}
+
+// ============================================================================
+// Helper Functions (continued)
+// ============================================================================
+
 // Helper to merge field config and metadata with proper type handling
 function mergeFieldConfig(
   field: FieldConfig,
@@ -234,6 +450,14 @@ function mergeFieldConfig(
         type: 'file' as const,
         accept: 'accept' in merged ? merged.accept : undefined,
         multiple: 'multiple' in merged ? merged.multiple : undefined,
+      };
+    
+    case 's3url':
+      return {
+        ...base,
+        type: 's3url' as const,
+        buckets: ('buckets' in merged ? merged.buckets : undefined) ?? [],
+        allowCustomBucket: ('allowCustomBucket' in merged ? merged.allowCustomBucket : undefined) ?? true,
       };
     
     case 'text':
@@ -379,6 +603,9 @@ export function ZodForm<T extends Record<string, any>>({
             multiple={mergedConfig.multiple}
           />
         );
+      
+      case 's3url':
+        return <S3UrlField key={field.name} config={mergedConfig} form={form} />;
       
       case 'text':
       default:
