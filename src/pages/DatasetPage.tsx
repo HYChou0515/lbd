@@ -56,9 +56,35 @@ import type { Resource } from '../types/meta';
 import { useUserPreferences } from '../hooks/useUserPreferences';
 import { useSettingsModal } from '../hooks/useSettingsModal';
 import type { Dataset } from '../types/dataset';
+import { z } from "zod";
+import { Modal } from '@mantine/core';
+import { ZodForm } from '../components/ZodForm';
+import { fieldRegistry } from '../schemas/fieldRegistry';
+
+// Dataset creation schema using field registry
+const newDatasetSchema = z.object({
+  name: fieldRegistry.datasetName,
+  description: fieldRegistry.datasetDescription,
+  type: fieldRegistry.datasetType,
+  toolId: fieldRegistry.toolId,
+  waferId: fieldRegistry.waferId,
+  lotId: fieldRegistry.lotId,
+  part: fieldRegistry.part,
+});
+
+type NewDatasetFormValues = z.infer<typeof newDatasetSchema>;
 
 export function DatasetPage() {
   const navigate = useNavigate();
+  
+  // New Dataset Modal State
+  const [isNewDatasetModalOpen, setIsNewDatasetModalOpen] = useState(false);
+
+  const handleCreateDataset = (values: NewDatasetFormValues) => {
+    console.log('Creating dataset:', values);
+    // TODO: Implement actual dataset creation
+    setIsNewDatasetModalOpen(false);
+  };
   
   // 用戶偏好設置
   const {
@@ -361,6 +387,39 @@ export function DatasetPage() {
 
   return (
     <>
+      {/* New Dataset Modal */}
+      <Modal
+        opened={isNewDatasetModalOpen}
+        onClose={() => setIsNewDatasetModalOpen(false)}
+        title="Create New Dataset"
+        size="lg"
+      >
+        <ZodForm
+          schema={newDatasetSchema}
+          fields={[
+            'name',
+            'description',
+            'type',
+            'toolId',
+            'waferId',
+            'lotId',
+            'part',
+          ]}
+          initialValues={{
+            name: '',
+            description: '',
+            type: 'EBI' as const,
+            toolId: '',
+            waferId: '',
+            lotId: '',
+            part: '',
+          }}
+          onSubmit={handleCreateDataset}
+          onCancel={() => setIsNewDatasetModalOpen(false)}
+          submitLabel="Create Dataset"
+        />
+      </Modal>
+
       {/* Settings Modal */}
 
       <Container fluid p="xl" mah={"100%"} w="100vw" style={{ minHeight: '100vh' }}>
@@ -391,6 +450,12 @@ export function DatasetPage() {
             </Text>
           </div>
           <Group gap="xs">
+            <Button
+              variant="subtle"
+              onClick={() => setIsNewDatasetModalOpen(true)}
+            >
+              New Dataset
+            </Button>
             <Button
               variant="subtle"
               leftSection={<IconSettings size={16} />}
