@@ -402,7 +402,7 @@ export function DatasetPage() {
         closeOnClickOutside={false}
         closeOnEscape={false}
       >
-        <ZodForm
+        <ZodForm<NewDatasetFormValues>
           schema={newDatasetSchema}
           fields={[
             'name',

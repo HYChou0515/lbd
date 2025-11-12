@@ -73,7 +73,7 @@ export type FieldMetadata = Omit<FieldConfig, 'name'> & { name?: string };
 
 export interface ZodFormProps<T extends Record<string, any>> {
   schema: z.ZodObject<any>;
-  fields: (string | FieldConfig)[];
+  fields: string[];
   initialValues?: Partial<T>;
   onSubmit: (values: T) => void;
   onCancel?: () => void;
@@ -915,7 +915,7 @@ function mergeFieldConfig(
   }
 }
 
-export function ZodForm<T extends Record<string, any>>({
+export function ZodForm<T extends {[k: string]: any}>({
   schema,
   fields,
   initialValues = {} as Partial<T>,
@@ -1018,23 +1018,21 @@ export function ZodForm<T extends Record<string, any>>({
     
     // Check if this field is a discriminated union
     const unionInfo = discriminatedUnions.get(field.name);
+    // Get metadata from Zod
+    const metadata = getMetadata(zodType);
+    const mergedConfig = mergeFieldConfig(field, metadata, zodType);
     
     if (unionInfo) {
       // Get metadata from the union for label/description
-      const metadata = getMetadata(zodType);
       const fieldWithMetadata = {
         ...field,
         label: field.label || metadata.label || formatLabel(field.name),
         description: field.description || metadata.description,
       };
-      return renderDiscriminatedUnionField(fieldWithMetadata, unionInfo);
+      return renderDiscriminatedUnionField(mergedConfig, unionInfo);
     }
     
-    // Get metadata from Zod
-    const metadata = getMetadata(zodType);
-    
     // Merge field config and metadata into final config
-    const mergedConfig = mergeFieldConfig(field, metadata, zodType);
     
     const commonProps = {
       label: mergedConfig.label,
