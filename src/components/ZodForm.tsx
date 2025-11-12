@@ -46,6 +46,7 @@ export type FieldConfig =
   | (BaseFieldConfig & { type: 'markdown'; height?: number; })
   | (BaseFieldConfig & { type: 'tags'; maxTags?: number; splitChars?: string[]; })
   | (BaseFieldConfig & { type: 'array'; itemType?: 'text' | 'number'; minItems?: number; maxItems?: number; })
+  | (BaseFieldConfig & { type: 'union' }) // Discriminated union
   | BaseFieldConfig; // No type = auto-infer
 
 // After resolving: guaranteed to have correct type and all properties
@@ -62,7 +63,8 @@ export type ResolvedFieldConfig =
   | (BaseFieldConfig & { type: 'giturl'; platforms: ('github' | 'gitlab')[]; })
   | (BaseFieldConfig & { type: 'markdown'; height: number; })
   | (BaseFieldConfig & { type: 'tags'; maxTags?: number; splitChars: string[]; })
-  | (BaseFieldConfig & { type: 'array'; itemType: 'text' | 'number'; minItems?: number; maxItems?: number; });
+  | (BaseFieldConfig & { type: 'array'; itemType: 'text' | 'number'; minItems?: number; maxItems?: number; })
+  | (BaseFieldConfig & { type: 'union'; unionInfo: DiscriminatedUnionInfo }); // Discriminated union with info
 
 // Metadata is just FieldConfig without the name requirement
 export type FieldMetadata = Omit<FieldConfig, 'name'> & { name?: string };
@@ -121,7 +123,7 @@ function getMetadata(zodType: any): FieldMetadata {
 }
 
 // Helper to infer field type from Zod schema
-function inferFieldType(zodType: any): 'text' | 'textarea' | 'number' | 'select' | 'switch' | 'date' | 'array' {
+function inferFieldType(zodType: any): 'text' | 'textarea' | 'number' | 'select' | 'switch' | 'date' | 'array' | 'union' {
   const def = zodType?.def;
   const typeName = def?.type;
   
@@ -130,6 +132,9 @@ function inferFieldType(zodType: any): 'text' | 'textarea' | 'number' | 'select'
   if (typeName === 'date') return 'date';
   if (typeName === 'enum') return 'select';
   if (typeName === 'array') return 'array';
+  
+  // Check for discriminated union
+  if (typeName === 'union' && def?.discriminator) return 'union';
   
   // For ZodOptional or ZodDefault, check the inner type
   if (typeName === 'optional' || typeName === 'default') {
@@ -780,7 +785,7 @@ function mergeFieldConfig(
   zodType: any
 ): ResolvedFieldConfig & { required: boolean } {
   // Merge metadata and field (field takes precedence), with inferred type as fallback
-  const merged = { 
+  const merged: FieldConfig = { 
     type: inferFieldType(zodType),
     ...metadata, 
     ...field 
@@ -794,46 +799,55 @@ function mergeFieldConfig(
     placeholder: merged.placeholder,
     description: merged.description,
   };
+  const ResolvedAsText: ResolvedFieldConfig & { required: boolean } = {
+    ...base,
+    type: 'text',
+  };
+
+  if(!('type' in merged)) {
+    return ResolvedAsText;
+  }
   
-  // Build config based on type (type is guaranteed to exist from spread)
-  const type = ('type' in merged && merged.type) || 'text';
-  
-  switch (type) {
-    case 'textarea':
+  switch (merged.type) {
+    case 'textarea': {
       return {
         ...base,
-        type: 'textarea' as const,
-        rows: ('rows' in merged ? merged.rows : undefined) ?? 3,
+        type: 'textarea',
+        rows: merged.rows ?? 3,
       };
+    }
     
-    case 'number':
+    case 'number': {
       return {
         ...base,
-        type: 'number' as const,
-        min: 'min' in merged ? merged.min : undefined,
-        max: 'max' in merged ? merged.max : undefined,
-        step: 'step' in merged ? merged.step : undefined,
+        type: 'number',
+        min: merged.min,
+        max: merged.max,
+        step: merged.step,
       };
+    }
     
-    case 'slider':
+    case 'slider': {
       return {
         ...base,
-        type: 'slider' as const,
-        sliderMin: ('sliderMin' in merged ? merged.sliderMin : undefined) ?? 0,
-        sliderMax: ('sliderMax' in merged ? merged.sliderMax : undefined) ?? 100,
-        step: ('step' in merged ? merged.step : undefined) ?? 1,
+        type: 'slider',
+        sliderMin: merged.sliderMin ?? 0,
+        sliderMax: merged.sliderMax ?? 100,
+        step: merged.step ?? 1,
       };
+    }
     
-    case 'select':
+    case 'select': {
       return {
         ...base,
-        type: 'select' as const,
-        options: ('options' in merged ? merged.options : undefined) ?? getEnumOptions(zodType) ?? [],
+        type: 'select',
+        options: merged.options ?? getEnumOptions(zodType) ?? [],
       };
+    }
     
     case 'switch':
       return {
-        type: 'switch' as const,
+        type: 'switch',
         name: base.name,
         label: base.label,
         required: base.required,
@@ -843,38 +857,42 @@ function mergeFieldConfig(
     case 'date':
       return {
         ...base,
-        type: 'date' as const,
+        type: 'date',
       };
     
-    case 'file':
+    case 'file': {
       return {
         ...base,
-        type: 'file' as const,
-        accept: 'accept' in merged ? merged.accept : undefined,
-        multiple: 'multiple' in merged ? merged.multiple : undefined,
+        type: 'file',
+        accept: merged.accept,
+        multiple: merged.multiple,
       };
+    }
     
-    case 's3url':
+    case 's3url': {
       return {
         ...base,
-        type: 's3url' as const,
-        buckets: ('buckets' in merged ? merged.buckets : undefined) ?? [],
-        allowCustomBucket: ('allowCustomBucket' in merged ? merged.allowCustomBucket : undefined) ?? true,
+        type: 's3url',
+        buckets: merged.buckets ?? [],
+        allowCustomBucket: merged.allowCustomBucket ?? true,
       };
+    }
     
-    case 'giturl':
+    case 'giturl': {
       return {
         ...base,
-        type: 'giturl' as const,
-        platforms: ('platforms' in merged ? merged.platforms : undefined) ?? ['github', 'gitlab'],
+        type: 'giturl',
+        platforms: merged.platforms ?? ['github', 'gitlab'],
       };
+    }
     
-    case 'markdown':
+    case 'markdown': {
       return {
         ...base,
-        type: 'markdown' as const,
-        height: ('height' in merged ? merged.height : undefined) ?? 400,
+        type: 'markdown',
+        height: merged.height ?? 400,
       };
+    }
     
     case 'array': {
       // Detect item type from Zod array schema
@@ -891,27 +909,42 @@ function mergeFieldConfig(
       
       return {
         ...base,
-        type: 'array' as const,
-        itemType: ('itemType' in merged ? merged.itemType : undefined) ?? detectedItemType,
-        minItems: 'minItems' in merged ? merged.minItems : undefined,
-        maxItems: 'maxItems' in merged ? merged.maxItems : undefined,
+        type: 'array',
+        itemType: merged.itemType ?? detectedItemType,
+        minItems: merged.minItems,
+        maxItems: merged.maxItems,
       };
     }
     
-    case 'tags':
+    case 'tags': {
       return {
         ...base,
-        type: 'tags' as const,
-        maxTags: 'maxTags' in merged ? merged.maxTags : undefined,
-        splitChars: ('splitChars' in merged ? merged.splitChars : undefined) ?? [',', ' '],
+        type: 'tags',
+        maxTags: merged.maxTags,
+        splitChars: merged.splitChars ?? [',', ' '],
       };
+    }
+    
+    case 'union': {
+      // Get union info for discriminated unions
+      const unionInfo = getDiscriminatedUnionInfo(zodType);
+      if (!unionInfo) {
+        // Fallback to text if union info not found
+        return {
+          ...base,
+          type: 'text',
+        };
+      }
+      return {
+        ...base,
+        type: 'union',
+        unionInfo,
+      };
+    }
     
     case 'text':
     default:
-      return {
-        ...base,
-        type: 'text' as const,
-      };
+      return ResolvedAsText
   }
 }
 
@@ -929,21 +962,11 @@ export function ZodForm<T extends {[k: string]: any}>({
     validate: zod4Resolver(schema),
   });
 
-  // Detect discriminated unions in the schema
-  const discriminatedUnions = new Map<string, DiscriminatedUnionInfo>();
   const schemaShape = schema.shape;
-  
-  for (const fieldName in schemaShape) {
-    const zodType = schemaShape[fieldName];
-    const unionInfo = getDiscriminatedUnionInfo(zodType);
-    if (unionInfo) {
-      discriminatedUnions.set(fieldName, unionInfo);
-    }
-  }
 
   // Render a discriminated union field as a Radio group + conditional fields
-  const renderDiscriminatedUnionField = (field: FieldConfig, unionInfo: DiscriminatedUnionInfo) => {
-    const discriminatorValue = form.values[field.name]?.[unionInfo.discriminatorKey] ?? '';
+  const renderDiscriminatedUnionField = (config: ResolvedFieldConfig & { required: boolean }, unionInfo: DiscriminatedUnionInfo) => {
+    const discriminatorValue = form.values[config.name]?.[unionInfo.discriminatorKey] ?? '';
     
     // Find the selected option schema
     const selectedOption = unionInfo.options.find(opt => opt.value === discriminatorValue);
@@ -955,11 +978,11 @@ export function ZodForm<T extends {[k: string]: any}>({
       : [];
     
     return (
-      <Stack key={field.name} gap="md">
+      <Stack key={config.name} gap="md">
         {/* Discriminator field - Radio group */}
         <Radio.Group
-          label={field.label || formatLabel(field.name)}
-          description={field.description}
+          label={config.label || formatLabel(config.name)}
+          description={config.description}
           value={discriminatorValue}
           onChange={(value) => {
             // Find the option schema for the selected value
@@ -968,7 +991,7 @@ export function ZodForm<T extends {[k: string]: any}>({
               // Initialize with discriminator value
               // Type assertion is necessary here because we're dynamically setting form values
               // The actual type safety is enforced by Zod validation
-              form.setFieldValue(field.name, { [unionInfo.discriminatorKey]: value } as never);
+              form.setFieldValue(config.name, { [unionInfo.discriminatorKey]: value } as never);
             }
           }}
         >
@@ -990,7 +1013,7 @@ export function ZodForm<T extends {[k: string]: any}>({
                 
                 // Create a nested field config
                 const nestedFieldConfig: FieldConfig = {
-                  name: `${field.name}.${fieldName}`,
+                  name: `${config.name}.${fieldName}`,
                   label: fieldMetadata.label || formatLabel(fieldName),
                   placeholder: fieldMetadata.placeholder,
                   description: fieldMetadata.description,
@@ -1016,23 +1039,9 @@ export function ZodForm<T extends {[k: string]: any}>({
     // Get the Zod type for this field
     const zodType = schemaShape?.[field.name];
     
-    // Check if this field is a discriminated union
-    const unionInfo = discriminatedUnions.get(field.name);
     // Get metadata from Zod
     const metadata = getMetadata(zodType);
     const mergedConfig = mergeFieldConfig(field, metadata, zodType);
-    
-    if (unionInfo) {
-      // Get metadata from the union for label/description
-      const fieldWithMetadata = {
-        ...field,
-        label: field.label || metadata.label || formatLabel(field.name),
-        description: field.description || metadata.description,
-      };
-      return renderDiscriminatedUnionField(mergedConfig, unionInfo);
-    }
-    
-    // Merge field config and metadata into final config
     
     const commonProps = {
       label: mergedConfig.label,
@@ -1041,9 +1050,10 @@ export function ZodForm<T extends {[k: string]: any}>({
       description: mergedConfig.description,
       ...form.getInputProps(field.name),
     };
-
     
     switch (mergedConfig.type) {
+      case 'union':
+        return renderDiscriminatedUnionField(mergedConfig, mergedConfig.unionInfo);
       case 'textarea':
         return (
           <Textarea
