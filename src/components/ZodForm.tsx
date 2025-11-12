@@ -46,7 +46,7 @@ export type FieldConfig =
   | (BaseFieldConfig & { type: 'markdown'; height?: number; })
   | (BaseFieldConfig & { type: 'tags'; maxTags?: number; splitChars?: string[]; })
   | (BaseFieldConfig & { type: 'array'; itemType?: 'text' | 'number'; minItems?: number; maxItems?: number; })
-  | (BaseFieldConfig & { type: 'union'; variant?: 'group' | 'card' }) // Discriminated union
+  | (BaseFieldConfig & { type: 'union'; variant?: 'radio.group' | 'radio.card' }) // Discriminated union
   | BaseFieldConfig; // No type = auto-infer
 
 // After resolving: guaranteed to have correct type and all properties
@@ -64,7 +64,7 @@ export type ResolvedFieldConfig =
   | (BaseFieldConfig & { type: 'markdown'; height: number; })
   | (BaseFieldConfig & { type: 'tags'; maxTags?: number; splitChars: string[]; })
   | (BaseFieldConfig & { type: 'array'; itemType: 'text' | 'number'; minItems?: number; maxItems?: number; })
-  | (BaseFieldConfig & { type: 'union'; unionInfo: DiscriminatedUnionInfo; variant: 'group' | 'card' }); // Discriminated union with info
+  | (BaseFieldConfig & { type: 'union'; unionInfo: DiscriminatedUnionInfo; variant: 'radio.group' | 'radio.card' }); // Discriminated union with info
 
 // Metadata is just FieldConfig without the name requirement
 export type FieldMetadata = Omit<FieldConfig, 'name'> & { name?: string };
@@ -939,7 +939,7 @@ function mergeFieldConfig(
         ...base,
         type: 'union',
         unionInfo,
-        variant: merged.variant ?? 'group',
+        variant: merged.variant ?? 'radio.group',
       };
     }
     
@@ -966,7 +966,7 @@ export function ZodForm<T extends {[k: string]: any}>({
   const schemaShape = schema.shape;
 
   // Render a discriminated union field as a Radio group + conditional fields
-  const renderDiscriminatedUnionField = (config: ResolvedFieldConfig & { required: boolean }, unionInfo: DiscriminatedUnionInfo, variant: 'group' | 'card') => {
+  const renderDiscriminatedUnionField = (config: ResolvedFieldConfig & { required: boolean }, unionInfo: DiscriminatedUnionInfo, variant: 'radio.group' | 'radio.card') => {
     const discriminatorValue = form.values[config.name]?.[unionInfo.discriminatorKey] ?? '';
     
     // Find the selected option schema
@@ -981,7 +981,7 @@ export function ZodForm<T extends {[k: string]: any}>({
     return (
       <Stack key={config.name} gap="md">
         {/* Discriminator field - Radio group or Radio cards */}
-        {variant === 'group' ? (
+        {variant === 'radio.group' ? (
           <Radio.Group
             label={config.label || formatLabel(config.name)}
             description={config.description}
@@ -1018,7 +1018,7 @@ export function ZodForm<T extends {[k: string]: any}>({
                 <Radio.Card
                   key={option.value}
                   radius="md"
-                  checked={discriminatorValue === option.value}
+                  checked={discriminatorValue === option.value || false}
                   onClick={() => {
                     // Initialize with discriminator value
                     // Type assertion is necessary here because we're dynamically setting form values
@@ -1029,7 +1029,7 @@ export function ZodForm<T extends {[k: string]: any}>({
                     padding: 'var(--mantine-spacing-md)',
                     cursor: 'pointer',
                     transition: 'border-color 150ms ease, background-color 150ms ease',
-                    borderColor: discriminatorValue === option.value ? 'var(--mantine-primary-color-filled)' : undefined,
+                    borderColor: (discriminatorValue === option.value) ? 'var(--mantine-primary-color-filled)' : undefined,
                   }}
                   styles={{
                     card: {
