@@ -1,6 +1,6 @@
 import { useForm } from '@mantine/form';
 import { zod4Resolver } from 'mantine-form-zod-resolver';
-import { Button, Stack, TextInput, Textarea, Select, NumberInput, Switch, Group, FileInput, Slider, Combobox, useCombobox, Input, InputBase, Box, Text, ActionIcon, Paper, TagsInput, Radio } from '@mantine/core';
+import { Button, Stack, TextInput, Textarea, Select, NumberInput, Switch, Group, FileInput, Slider, Combobox, useCombobox, Input, InputBase, Box, Text, ActionIcon, Paper, TagsInput, Radio, SimpleGrid } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
 import { IconPlus, IconTrash } from '@tabler/icons-react';
 import { z } from 'zod';
@@ -46,7 +46,7 @@ export type FieldConfig =
   | (BaseFieldConfig & { type: 'markdown'; height?: number; })
   | (BaseFieldConfig & { type: 'tags'; maxTags?: number; splitChars?: string[]; })
   | (BaseFieldConfig & { type: 'array'; itemType?: 'text' | 'number'; minItems?: number; maxItems?: number; })
-  | (BaseFieldConfig & { type: 'union' }) // Discriminated union
+  | (BaseFieldConfig & { type: 'union'; variant?: 'group' | 'card' }) // Discriminated union
   | BaseFieldConfig; // No type = auto-infer
 
 // After resolving: guaranteed to have correct type and all properties
@@ -64,7 +64,7 @@ export type ResolvedFieldConfig =
   | (BaseFieldConfig & { type: 'markdown'; height: number; })
   | (BaseFieldConfig & { type: 'tags'; maxTags?: number; splitChars: string[]; })
   | (BaseFieldConfig & { type: 'array'; itemType: 'text' | 'number'; minItems?: number; maxItems?: number; })
-  | (BaseFieldConfig & { type: 'union'; unionInfo: DiscriminatedUnionInfo }); // Discriminated union with info
+  | (BaseFieldConfig & { type: 'union'; unionInfo: DiscriminatedUnionInfo; variant: 'group' | 'card' }); // Discriminated union with info
 
 // Metadata is just FieldConfig without the name requirement
 export type FieldMetadata = Omit<FieldConfig, 'name'> & { name?: string };
@@ -939,6 +939,7 @@ function mergeFieldConfig(
         ...base,
         type: 'union',
         unionInfo,
+        variant: merged.variant ?? 'group',
       };
     }
     
@@ -965,7 +966,7 @@ export function ZodForm<T extends {[k: string]: any}>({
   const schemaShape = schema.shape;
 
   // Render a discriminated union field as a Radio group + conditional fields
-  const renderDiscriminatedUnionField = (config: ResolvedFieldConfig & { required: boolean }, unionInfo: DiscriminatedUnionInfo) => {
+  const renderDiscriminatedUnionField = (config: ResolvedFieldConfig & { required: boolean }, unionInfo: DiscriminatedUnionInfo, variant: 'group' | 'card') => {
     const discriminatorValue = form.values[config.name]?.[unionInfo.discriminatorKey] ?? '';
     
     // Find the selected option schema
@@ -979,28 +980,94 @@ export function ZodForm<T extends {[k: string]: any}>({
     
     return (
       <Stack key={config.name} gap="md">
-        {/* Discriminator field - Radio group */}
-        <Radio.Group
-          label={config.label || formatLabel(config.name)}
-          description={config.description}
-          value={discriminatorValue}
-          onChange={(value) => {
-            // Find the option schema for the selected value
-            const option = unionInfo.options.find(opt => opt.value === value);
-            if (option) {
-              // Initialize with discriminator value
-              // Type assertion is necessary here because we're dynamically setting form values
-              // The actual type safety is enforced by Zod validation
-              form.setFieldValue(config.name, { [unionInfo.discriminatorKey]: value } as never);
-            }
-          }}
-        >
-          <Group gap="xs" mt="xs">
-            {unionInfo.options.map(option => (
-              <Radio key={option.value} value={option.value} label={option.label} />
-            ))}
-          </Group>
-        </Radio.Group>
+        {/* Discriminator field - Radio group or Radio cards */}
+        {variant === 'group' ? (
+          <Radio.Group
+            label={config.label || formatLabel(config.name)}
+            description={config.description}
+            value={discriminatorValue}
+            onChange={(value) => {
+              // Find the option schema for the selected value
+              const option = unionInfo.options.find(opt => opt.value === value);
+              if (option) {
+                // Initialize with discriminator value
+                // Type assertion is necessary here because we're dynamically setting form values
+                // The actual type safety is enforced by Zod validation
+                form.setFieldValue(config.name, { [unionInfo.discriminatorKey]: value } as never);
+              }
+            }}
+          >
+            <Group gap="xs" mt="xs">
+              {unionInfo.options.map(option => (
+                <Radio key={option.value} value={option.value} label={option.label} />
+              ))}
+            </Group>
+          </Radio.Group>
+        ) : (
+          <div>
+            <Text size="sm" fw={500} mb="xs">
+              {config.label || formatLabel(config.name)}
+            </Text>
+            {config.description && (
+              <Text size="xs" c="dimmed" mb="md">
+                {config.description}
+              </Text>
+            )}
+            <SimpleGrid cols={2}>
+              {unionInfo.options.map(option => (
+                <Radio.Card
+                  key={option.value}
+                  radius="md"
+                  checked={discriminatorValue === option.value}
+                  onClick={() => {
+                    // Initialize with discriminator value
+                    // Type assertion is necessary here because we're dynamically setting form values
+                    // The actual type safety is enforced by Zod validation
+                    form.setFieldValue(config.name, { [unionInfo.discriminatorKey]: option.value } as never);
+                  }}
+                  style={{
+                    padding: 'var(--mantine-spacing-md)',
+                    cursor: 'pointer',
+                    transition: 'border-color 150ms ease, background-color 150ms ease',
+                    borderColor: discriminatorValue === option.value ? 'var(--mantine-primary-color-filled)' : undefined,
+                  }}
+                  styles={{
+                    card: {
+                      '&:hover': {
+                        backgroundColor: 'var(--mantine-color-gray-0)',
+                      },
+                    },
+                  }}
+                >
+                  <Group wrap="nowrap" align="flex-start">
+                    <Radio.Indicator />
+                    <div>
+                      <Text fw={700} size="md" lh={1.3}>{option.label}</Text>
+                      {(() => {
+                        // Get description from the non-discriminator field in this option
+                        const fields = Object.keys(option.schema.shape || {}).filter(
+                          key => key !== unionInfo.discriminatorKey
+                        );
+                        if (fields.length > 0) {
+                          const fieldZodType = option.schema.shape[fields[0]];
+                          const fieldMetadata = getMetadata(fieldZodType);
+                          if (fieldMetadata.description) {
+                            return (
+                              <Text size="xs" c="dimmed" mt={8}>
+                                {fieldMetadata.description}
+                              </Text>
+                            );
+                          }
+                        }
+                        return null;
+                      })()}
+                    </div>
+                  </Group>
+                </Radio.Card>
+              ))}
+            </SimpleGrid>
+          </div>
+        )}
 
         {/* Conditional fields based on discriminator value */}
         {selectedOption && selectedSchema && selectedFields.length > 0 && (
@@ -1053,7 +1120,7 @@ export function ZodForm<T extends {[k: string]: any}>({
     
     switch (mergedConfig.type) {
       case 'union':
-        return renderDiscriminatedUnionField(mergedConfig, mergedConfig.unionInfo);
+        return renderDiscriminatedUnionField(mergedConfig, mergedConfig.unionInfo, mergedConfig.variant);
       case 'textarea':
         return (
           <Textarea

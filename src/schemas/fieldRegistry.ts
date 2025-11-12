@@ -341,7 +341,8 @@ export const fieldRegistry = {
     }),
   ]).describe(JSON.stringify({
     label: "Data Source",
-    description: "Choose how you want to provide your data"
+    description: "Choose how you want to provide your data",
+    variant: "card"
   })),
 } as const;
 
